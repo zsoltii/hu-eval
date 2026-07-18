@@ -1,0 +1,9 @@
+# Futtatási adatok — az eredeti helyen sincsenek git-ben
+results/
+data/
+logs/
+state/
+
+# Python bytecode
+__pycache__/
+*.pyc

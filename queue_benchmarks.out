@@ -1,0 +1,85 @@
+2026. jún. 16., kedd, 15:29:54 CEST - queue_all_benchmarks indul: logs/queue_all_20260616_1529.log
+2026. jún. 16., kedd, 15:29:54 CEST - hulu qwen3.5:cloud (nothink): már kész (2581+ sor), kihagyás.
+2026. jún. 16., kedd, 15:29:54 CEST - hulu qwen3.5:cloud (think): már kész (2581+ sor), kihagyás.
+2026. jún. 16., kedd, 15:29:54 CEST - hulu qwen3-next:80b-cloud (nothink): már kész (2581+ sor), kihagyás.
+2026. jún. 16., kedd, 15:29:54 CEST - hulu qwen3-next:80b-cloud (think): már kész (2581+ sor), kihagyás.
+2026. jún. 16., kedd, 15:29:54 CEST - hulu gpt-oss:120b-cloud (nothink): már kész (2581+ sor), kihagyás.
+2026. jún. 16., kedd, 15:29:54 CEST - hulu gpt-oss:120b-cloud (think): már kész (2581+ sor), kihagyás.
+2026. jún. 16., kedd, 15:29:54 CEST - hulu kimi-k2.6:cloud (nothink): már kész (2581+ sor), kihagyás.
+2026. jún. 16., kedd, 15:29:54 CEST - hulu kimi-k2.6:cloud (think): már kész (2581+ sor), kihagyás.
+2026. jún. 16., kedd, 15:29:54 CEST - hulu glm-5.1:cloud (nothink): már kész (2581+ sor), kihagyás.
+2026. jún. 16., kedd, 15:29:54 CEST - hulu glm-5.1:cloud (think): már kész (2581+ sor), kihagyás.
+2026. jún. 16., kedd, 15:29:54 CEST - hulu nemotron-3-ultra:cloud (nothink): már kész (2581+ sor), kihagyás.
+2026. jún. 16., kedd, 15:29:54 CEST - hulu nemotron-3-ultra:cloud (think): már kész (2581+ sor), kihagyás.
+2026. jún. 16., kedd, 15:29:54 CEST - hulu deepseek-v4-flash:cloud (nothink): már kész (2581+ sor), kihagyás.
+2026. jún. 16., kedd, 15:29:54 CEST - hulu deepseek-v4-flash:cloud (think): már kész (2581+ sor), kihagyás.
+2026. jún. 16., kedd, 15:29:55 CEST - hulu deepseek-v4-pro:cloud (nothink): már kész (2581+ sor), kihagyás.
+2026. jún. 16., kedd, 15:29:55 CEST - hulu deepseek-v4-pro:cloud (think): már kész (2581+ sor), kihagyás.
+2026. jún. 16., kedd, 15:29:55 CEST - hulu minimax-m3:cloud (nothink): már kész (2581+ sor), kihagyás.
+2026. jún. 16., kedd, 15:29:55 CEST - hulu minimax-m3:cloud (think): már kész (2581+ sor), kihagyás.
+2026. jún. 16., kedd, 15:29:55 CEST - hulu gpt-oss:20b-cloud (nothink): már kész (2581+ sor), kihagyás.
+2026. jún. 16., kedd, 15:29:55 CEST - gpt-oss:20b-cloud (think) hulu: skip (gpt-oss:20b think kizárva)
+2026. jún. 16., kedd, 15:29:55 CEST - Benchmark indítása: mmlu_hu qwen3.5:cloud (nothink)
+2026. jún. 16., kedd, 17:26:50 CEST - mmlu_hu qwen3.5:cloud (nothink): KÉSZ, exit=0
+2026. jún. 16., kedd, 17:26:50 CEST - Benchmark indítása: mmlu_hu qwen3.5:cloud (think)
+2026. jún. 16., kedd, 19:35:14 CEST - mmlu_hu qwen3.5:cloud (think): KÉSZ, exit=0
+2026. jún. 16., kedd, 19:35:14 CEST - Benchmark indítása: mmlu_hu qwen3-next:80b-cloud (nothink)
+2026. jún. 16., kedd, 19:35:14 CEST - mmlu_hu qwen3-next:80b-cloud (nothink): HIBA, exit=1, log: logs/mmlu_hu_qwen3-next-80b-cloud-nothink_20260616_1935.log
+2026. jún. 16., kedd, 19:35:14 CEST - Benchmark indítása: mmlu_hu qwen3-next:80b-cloud (think)
+2026. jún. 16., kedd, 19:35:19 CEST - mmlu_hu qwen3-next:80b-cloud (think): HIBA, exit=1, log: logs/mmlu_hu_qwen3-next-80b-cloud-think_20260616_1935.log
+2026. jún. 16., kedd, 19:35:19 CEST - Benchmark indítása: mmlu_hu gpt-oss:120b-cloud (nothink)
+2026. jún. 16., kedd, 20:43:38 CEST - mmlu_hu gpt-oss:120b-cloud (nothink): KÉSZ, exit=0
+2026. jún. 16., kedd, 20:43:38 CEST - Benchmark indítása: mmlu_hu gpt-oss:120b-cloud (think)
+2026. jún. 16., kedd, 21:55:34 CEST - mmlu_hu gpt-oss:120b-cloud (think): KÉSZ, exit=0
+2026. jún. 16., kedd, 21:55:34 CEST - Benchmark indítása: mmlu_hu kimi-k2.6:cloud (nothink)
+2026. jún. 17., szerda, 01:08:53 CEST - mmlu_hu kimi-k2.6:cloud (nothink): KÉSZ, exit=0
+2026. jún. 17., szerda, 01:08:53 CEST - Benchmark indítása: mmlu_hu kimi-k2.6:cloud (think)
+2026. jún. 17., szerda, 02:35:48 CEST - mmlu_hu kimi-k2.6:cloud (think): KÉSZ, exit=0
+2026. jún. 17., szerda, 02:35:48 CEST - Benchmark indítása: mmlu_hu glm-5.1:cloud (nothink)
+2026. jún. 17., szerda, 04:02:36 CEST - mmlu_hu glm-5.1:cloud (nothink): KÉSZ, exit=0
+2026. jún. 17., szerda, 04:02:36 CEST - Benchmark indítása: mmlu_hu glm-5.1:cloud (think)
+2026. jún. 17., szerda, 05:38:11 CEST - mmlu_hu glm-5.1:cloud (think): KÉSZ, exit=0
+2026. jún. 17., szerda, 05:38:11 CEST - Benchmark indítása: mmlu_hu nemotron-3-ultra:cloud (nothink)
+2026. jún. 17., szerda, 08:57:56 CEST - mmlu_hu nemotron-3-ultra:cloud (nothink): KÉSZ, exit=0
+2026. jún. 17., szerda, 08:57:56 CEST - Benchmark indítása: mmlu_hu nemotron-3-ultra:cloud (think)
+2026. jún. 17., szerda, 15:43:59 CEST - mmlu_hu nemotron-3-ultra:cloud (think): KÉSZ, exit=0
+2026. jún. 17., szerda, 15:43:59 CEST - Benchmark indítása: mmlu_hu deepseek-v4-flash:cloud (nothink)
+2026. jún. 17., szerda, 17:04:14 CEST - mmlu_hu deepseek-v4-flash:cloud (nothink): KÉSZ, exit=0
+2026. jún. 17., szerda, 17:04:14 CEST - Benchmark indítása: mmlu_hu deepseek-v4-flash:cloud (think)
+2026. jún. 17., szerda, 18:39:49 CEST - mmlu_hu deepseek-v4-flash:cloud (think): KÉSZ, exit=0
+2026. jún. 17., szerda, 18:39:49 CEST - Benchmark indítása: mmlu_hu deepseek-v4-pro:cloud (nothink)
+2026. jún. 17., szerda, 19:48:32 CEST - mmlu_hu deepseek-v4-pro:cloud (nothink): KÉSZ, exit=0
+2026. jún. 17., szerda, 19:48:32 CEST - Benchmark indítása: mmlu_hu deepseek-v4-pro:cloud (think)
+2026. jún. 17., szerda, 21:00:49 CEST - mmlu_hu deepseek-v4-pro:cloud (think): KÉSZ, exit=0
+2026. jún. 17., szerda, 21:00:49 CEST - Benchmark indítása: mmlu_hu minimax-m3:cloud (nothink)
+2026. jún. 17., szerda, 22:35:33 CEST - mmlu_hu minimax-m3:cloud (nothink): KÉSZ, exit=0
+2026. jún. 17., szerda, 22:35:33 CEST - Benchmark indítása: mmlu_hu minimax-m3:cloud (think)
+2026. jún. 18., csütörtök, 00:14:23 CEST - mmlu_hu minimax-m3:cloud (think): KÉSZ, exit=0
+2026. jún. 18., csütörtök, 00:14:24 CEST - Benchmark indítása: mmlu_hu gpt-oss:20b-cloud (nothink)
+2026. jún. 18., csütörtök, 01:34:25 CEST - mmlu_hu gpt-oss:20b-cloud (nothink): KÉSZ, exit=0
+2026. jún. 18., csütörtök, 01:34:25 CEST - gpt-oss:20b-cloud (think) mmlu_hu: skip (gpt-oss:20b think kizárva)
+2026. jún. 18., csütörtök, 01:34:25 CEST - Benchmark indítása: hugme qwen3.5:cloud (nothink)
+2026. jún. 18., csütörtök, 02:41:16 CEST - hugme qwen3.5:cloud (nothink): KÉSZ, exit=0
+2026. jún. 18., csütörtök, 02:41:16 CEST - Judge indítása: hugme qwen3.5:cloud (nothink)
+2026. jún. 18., csütörtök, 04:43:57 CEST - Judge: hugme qwen3.5:cloud (nothink): 0
+2026. jún. 18., csütörtök, 04:43:57 CEST - Benchmark indítása: hugme qwen3.5:cloud (think)
+2026. jún. 18., csütörtök, 07:11:28 CEST - hugme qwen3.5:cloud (think): KÉSZ, exit=0
+2026. jún. 18., csütörtök, 07:11:28 CEST - Judge indítása: hugme qwen3.5:cloud (think)
+2026. jún. 18., csütörtök, 09:17:34 CEST - Judge: hugme qwen3.5:cloud (think): 0
+2026. jún. 18., csütörtök, 09:17:34 CEST - Benchmark indítása: hugme qwen3-next:80b-cloud (nothink)
+2026. jún. 18., csütörtök, 09:17:34 CEST - hugme qwen3-next:80b-cloud (nothink): HIBA, exit=1, log: logs/hugme_qwen3-next-80b-cloud-nothink_20260618_0917.log
+2026. jún. 18., csütörtök, 09:17:34 CEST - Benchmark indítása: hugme qwen3-next:80b-cloud (think)
+2026. jún. 18., csütörtök, 09:17:35 CEST - hugme qwen3-next:80b-cloud (think): HIBA, exit=1, log: logs/hugme_qwen3-next-80b-cloud-think_20260618_0917.log
+2026. jún. 18., csütörtök, 09:17:35 CEST - Benchmark indítása: hugme gpt-oss:120b-cloud (nothink)
+2026. jún. 18., csütörtök, 10:55:47 CEST - hugme gpt-oss:120b-cloud (nothink): KÉSZ, exit=0
+2026. jún. 18., csütörtök, 10:55:47 CEST - Judge indítása: hugme gpt-oss:120b-cloud (nothink)
+2026. jún. 18., csütörtök, 13:03:06 CEST - Judge: hugme gpt-oss:120b-cloud (nothink): 0
+2026. jún. 18., csütörtök, 13:03:06 CEST - Benchmark indítása: hugme gpt-oss:120b-cloud (think)
+2026. jún. 18., csütörtök, 14:43:46 CEST - hugme gpt-oss:120b-cloud (think): KÉSZ, exit=0
+2026. jún. 18., csütörtök, 14:43:46 CEST - Judge indítása: hugme gpt-oss:120b-cloud (think)
+2026. jún. 18., csütörtök, 16:50:41 CEST - Judge: hugme gpt-oss:120b-cloud (think): 0
+2026. jún. 18., csütörtök, 16:50:41 CEST - Benchmark indítása: hugme kimi-k2.6:cloud (nothink)
+2026. jún. 18., csütörtök, 18:46:35 CEST - hugme kimi-k2.6:cloud (nothink): KÉSZ, exit=0
+2026. jún. 18., csütörtök, 18:46:35 CEST - Judge indítása: hugme kimi-k2.6:cloud (nothink)
+2026. jún. 18., csütörtök, 20:58:37 CEST - Judge: hugme kimi-k2.6:cloud (nothink): 0
+2026. jún. 18., csütörtök, 20:58:37 CEST - Benchmark indítása: hugme kimi-k2.6:cloud (think)
