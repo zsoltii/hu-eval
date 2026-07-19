@@ -292,9 +292,9 @@ if __name__ == "__main__":
 ### 2. Futtatás
 
 ```bash
-source /home/openclaw/anaconda3/etc/profile.d/conda.sh
+source "$HOME/anaconda3/etc/profile.d/conda.sh"
 conda activate eval-hu
-cd /home/openclaw/.openclaw/wiki/hu-eval
+cd .
 
 # Alapértelmezett: ./results → ./reports
 python aggregate_results.py

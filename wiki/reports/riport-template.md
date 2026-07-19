@@ -26,7 +26,7 @@
 | Riport azonosító | `hu-eval-YYYYMMDD-<modell-száma>` |
 | Riport dátum | YYYY-MM-DD |
 | Értékelt modellek | `modell1:verzió`, `modell2:verzió`, ... |
-| Operator | `openclaw` |
+| Operator | `fater.zsolt` |
 | Riport státusz | `draft` / `final` |
 
 > **Bíró modell** (LLM-as-a-Judge): `deepseek-v4-pro:cloud` — a `gemini-3-flash-preview:latest` 2026-07-14. 09:00 CEST óta nem elérhető (Ollama megszűnés), helyette ez a hivatalos bíró (2026-07-19 óta). **Self-bias korlát (SZENT):** a bíró modell nem értékelheti saját magát — a `deepseek-v4-pro` saját HuGME/MT-Bench-HU sorait független bíróval vagy kivételzéssel kell kezelni. A bíró modell részletes adatai a [Függelék — Verzióinformáció](#verzióinformáció) szekcióban.
@@ -256,7 +256,7 @@ Minden nyers mérési adat itt található:
 
 A mérések reprodukálásához szükséges:
 
-- Conda env: `eval-hu` (Python 3.11, `/home/openclaw/anaconda3/envs/eval-hu`) — **nem** `hu-eval`!
+- Conda env: `eval-hu` (Python 3.11, `$HOME/anaconda3/envs/eval-hu`) — **nem** `hu-eval`!
 - Ollama verzió: `>=0.5.0` (cloud API endpoint: `https://ollama.com:443`)
 - Ollama kliens beállítások: `temperature=0.0`, `num_predict=32/1024/2048` (bench mód szerint), `stream=False`
 - Prompt template-ek: `scripts/judge_hugme.py:27-36` (HuGME), `scripts/judge_mt_bench.py:23-39` (MT-Bench)
@@ -277,8 +277,8 @@ A mérések reprodukálásához szükséges:
 
 | Dátum | Szerző | Változás |
 |-------|--------|----------|
-| 2026-06-06 | openclaw | Sablon létrehozva |
-| 2026-07-15 | openclaw | v1.1: sebesség/költség/kontextus törlése, két kompozit tábla, két heatmap, UD/MT-Bench szekciók, bíró megszűnés lábjegyzet |
+| 2026-06-06 | fater.zsolt | Sablon létrehozva |
+| 2026-07-15 | fater.zsolt | v1.1: sebesség/költség/kontextus törlése, két kompozit tábla, két heatmap, UD/MT-Bench szekciók, bíró megszűnés lábjegyzet |
 
 ## Kapcsolódó
 

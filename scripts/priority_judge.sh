@@ -5,11 +5,11 @@
 
 set -e
 
-LOG_DIR="/home/openclaw/.openclaw/wiki/hu-eval/logs"
-PROJ="/home/openclaw/.openclaw/wiki/hu-eval"
+LOG_DIR="./logs"
+PROJ="."
 
 cd "$PROJ"
-source /home/openclaw/anaconda3/etc/profile.d/conda.sh
+source "$HOME/anaconda3/etc/profile.d/conda.sh"
 conda activate eval-hu
 
 echo "$(date): priority_judge indítása (bíró: deepseek-v4-pro:cloud)"

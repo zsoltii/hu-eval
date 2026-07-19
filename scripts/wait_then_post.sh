@@ -3,7 +3,7 @@
 # a post_followup.sh-t.
 
 set -e
-PROJ="/home/openclaw/.openclaw/wiki/hu-eval"
+PROJ="."
 HULU_PID="$1"
 MMLU_PID="$2"
 

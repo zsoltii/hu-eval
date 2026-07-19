@@ -13,7 +13,7 @@ Létrehozni egy reprodukálható, izolált Python környezetet a magyar LLM ért
 
 ## Előfeltételek
 
-- **Anaconda / Miniconda** telepítve (`/home/openclaw/anaconda3/` a default lokáció ezen a gépen)
+- **Anaconda / Miniconda** telepítve (`$HOME/anaconda3/` a default lokáció ezen a gépen)
 - **Ollama szerver** fut a `http://localhost:11434` címen (vagy elérhető hálózaton)
 - **Python 3.11** — a `eval-hu` env ezt a verziót használja (3.12-vel a `deepeval`-nak vannak kompatibilitási gondjai)
 - **Linux / macOS** — a parancsok mindkettőn működnek, de a `~/.bashrc` vs `~/.zshrc` eltérő lehet
@@ -36,7 +36,7 @@ conda env list | grep eval-hu
 A kimenetben ezt kell látnod:
 
 ```
-eval-hhu                 /home/openclaw/anaconda3/envs/eval-hu
+eval-hhu                 $HOME/anaconda3/envs/eval-hu
 ```
 
 ### 2. Aktiválás
@@ -52,7 +52,7 @@ python --version
 
 # Ellenőrizd a pip-et (mindig az env-en belüli pip-et használd!)
 which pip
-# Elvárt: /home/openclaw/anaconda3/envs/eval-hu/bin/pip
+# Elvárt: $HOME/anaconda3/envs/eval-hu/bin/pip
 ```
 
 **FONTOS:** Ha a `which pip` a `/usr/bin/pip`-et mutatja, akkor a `conda activate` nem futott le rendesen. Ilyenkor a globális Pythonba telepítesz, ami **rossz** — töröld a telepítést és aktiválj újra.
@@ -125,7 +125,7 @@ else:
 
 ```bash
 # Futtatás
-cd /home/openclaw/.openclaw/wiki/hu-eval
+cd .
 python verify_env.py
 ```
 
@@ -133,7 +133,7 @@ Elvárt kimenet (a verziószámok változhatnak):
 
 ```
 Python: 3.11.x (...)
-Interpreter: /home/openclaw/anaconda3/envs/eval-hu/bin/python
+Interpreter: $HOME/anaconda3/envs/eval-hu/bin/python
 ---
 ✅ requests       2.32.x     — HTTP kérések (Ollama API, dataset letöltés)
 ✅ pandas         2.2.x      — JSON eredmények aggregációja
@@ -201,8 +201,8 @@ conda init bash  # vagy `conda init zsh` macOS-en
 conda activate eval-hu
 
 # 4. Ellenőrizd újra
-which python  # /home/openclaw/anaconda3/envs/eval-hu/bin/python kell legyen
-which pip     # /home/openclaw/anaconda3/envs/eval-hu/bin/pip kell legyen
+which python  # $HOME/anaconda3/envs/eval-hu/bin/python kell legyen
+which pip     # $HOME/anaconda3/envs/eval-hu/bin/pip kell legyen
 ```
 
 ### C) Mac-en a matplotlib nem tudja renderelni a headless ábrákat

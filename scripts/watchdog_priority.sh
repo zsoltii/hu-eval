@@ -7,7 +7,7 @@
 
 set -u
 
-PROJ="/home/openclaw/.openclaw/wiki/hu-eval"
+PROJ="."
 LOG_DIR="$PROJ/logs"
 WD_LOG="$LOG_DIR/watchdog.log"
 
@@ -38,9 +38,9 @@ python_running() {
 restart_priority() {
     log "🔄 priority_judge.sh újraindítása (háttérben, nohup, conda eval-hu)"
     nohup bash -c "
-        source /home/openclaw/anaconda3/etc/profile.d/conda.sh
+        source "$HOME/anaconda3/etc/profile.d/conda.sh"
         conda activate eval-hu
-        cd '$PROJ'
+        cd "$PROJ"
         bash scripts/priority_judge.sh
     " >> "$LOG_DIR/priority_judge.log" 2>&1 &
     disown

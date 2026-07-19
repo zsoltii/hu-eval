@@ -122,7 +122,7 @@ Minden `.md` fájl frontmatter nélküli, de a tetején kötelező blokk:
 - **Ingest új forráskor:** routing → szintetizálás → index frissítés → log bejegyzés
 - **Preserve & extend:** meglévő oldal tartalmát megtartjuk, kiegészítjük; nem írunk felül elveszett információt
 - **Ellentmondásjelölés:** ha két forrás mást mond, `> ⚠️ ELENTMONDÁS: ...` blokkban jelöljük
-- **Verzió:** a parent `~/.openclaw/` git repo óránként pushol, NE inicializáljunk új git repót
+- **Verzió:** a parent `~/hu-eval/` git repo óránként pushol, NE inicializáljunk új git repót
 
 ---
 

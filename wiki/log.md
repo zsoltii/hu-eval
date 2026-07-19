@@ -464,7 +464,7 @@ A 4 újraindítási kísérlet (17:37, 17:44, 17:51, 17:56) után sem sikerült 
 
 ## 2026-06-06 (v1.0 — kezdeti feltöltés)
 
-- 12:05 — Státusz kérés a felhasználótól (`#openclawai` thread). Elismerve, hogy eddig nem haladtam érdemben, csak tervek születtek (korábbi 2026-06-05 21:09-es üzenet).
+- 12:05 — Státusz kérés a felhasználótól. Elismerve, hogy eddig nem haladtam érdemben, csak tervek születtek (korábbi 2026-06-05 21:09-es üzenet).
 - 12:06 — Megkezdem a tényleges munkát. Létrehozva: `SCHEMA.md` (100 sor), `overview.md` (67 sor), `log.md` (üres), `index.md` (üres placeholder).
 - 12:06 — Terv: 6 subagent indítása párhuzamosan (stat bench, gen bench, ling tesztek, modellek, runbookok, riport).
 - 12:08-12:20 — **6 subagent párhuzamosan fut**, mind a 6 sikeresen befejeződött. Összesen 32 új markdown fájl jött létre (~6500 sor).

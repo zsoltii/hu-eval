@@ -36,7 +36,7 @@ Minden feladatnál 1 helyes válasz van, 0-9 közötti index-szel jelölve.
 ### 1. Mappastruktúra
 
 ```bash
-cd /home/openclaw/.openclaw/wiki/hu-eval
+cd .
 mkdir -p data/hulu results logs state
 ```
 
@@ -360,7 +360,7 @@ if __name__ == "__main__":
 ### 4. Futtatás + 5. Eredmények (gyors)
 
 ```bash
-conda activate eval-hu && cd /home/openclaw/.openclaw/wiki/hu-eval
+conda activate eval-hu && cd .
 
 # Smoke test (minden taskból 10-10 = 60 prompt, ~6 perc)
 python run_hulu.py --model qwen3.5:4b --limit 10

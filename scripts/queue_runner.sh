@@ -1,6 +1,6 @@
 #!/bin/bash
 set -u
-cd /home/openclaw/.openclaw/wiki/hu-eval
+cd "$(dirname "$0")/.."
 
 QUEUE_LOG="logs/queue_runner_$(date +%Y%m%d_%H%M).log"
 echo "$(date) - queue_runner indul: $QUEUE_LOG" | tee "$QUEUE_LOG"
@@ -54,7 +54,7 @@ for MODEL in "${MODELS[@]}"; do
     echo "$(date) - Benchmark indítása: $MODEL ($MODE)" | tee -a "$QUEUE_LOG"
     TS=$(date +%Y%m%d_%H%M)
     LOG="logs/hulu_${MODEL_SAFE_BASE}-${MODE}_${TS}.log"
-    /home/openclaw/anaconda3/envs/eval-hu/bin/python scripts/run_hulu.py --model "$MODEL" --mode "$MODE" > "$LOG" 2>&1
+    $HOME/anaconda3/envs/eval-hu/bin/python scripts/run_hulu.py --model "$MODEL" --mode "$MODE" > "$LOG" 2>&1
     EXIT_CODE=$?
     if [ $EXIT_CODE -eq 0 ]; then
       echo "$(date) - $MODEL ($MODE): KÉSZ, exit=0, log: $LOG" | tee -a "$QUEUE_LOG"

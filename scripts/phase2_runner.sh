@@ -1,6 +1,6 @@
 #!/bin/bash
 set -u
-cd /home/openclaw/.openclaw/wiki/hu-eval
+cd "$(dirname "$0")/.."
 
 WAIT_PID_FILE="logs/queue_runner.pid"
 QUEUE_LOG="logs/queue_runner_$(date +%Y%m%d_%H%M).log"  # placeholder, figyeljük a PID fájlt
@@ -65,7 +65,7 @@ for MODEL in "${MODELS[@]}"; do
   echo "$(date) - $MODEL (think): indítás (RESUME ha van checkpoint)" | tee -a "$PHASE2_LOG"
   TS=$(date +%Y%m%d_%H%M)
   LOG="logs/hulu_${MODEL_SAFE}-think_phase2_${TS}.log"
-  /home/openclaw/anaconda3/envs/eval-hu/bin/python scripts/run_hulu.py --model "$MODEL" --mode think > "$LOG" 2>&1
+  $HOME/anaconda3/envs/eval-hu/bin/python scripts/run_hulu.py --model "$MODEL" --mode think > "$LOG" 2>&1
   EXIT_CODE=$?
   if [ $EXIT_CODE -eq 0 ]; then
     echo "$(date) - $MODEL (think): KÉSZ" | tee -a "$PHASE2_LOG"

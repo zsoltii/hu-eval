@@ -100,7 +100,7 @@ Gyökérkötelező fájlok: `index.md`, `log.md`, `SCHEMA.md`, `overview.md`.
 A `wiki/` egy meglévő git repo (`github.com/zsoltii/hu-eval.git`) alkönyvtára.
 **NE futtass `git init`-et** a wiki mappában — a parent repo kezeli a
 verziókezelést. (SCHEMA.md régebbi megjegyzése, miszerint a parent
-`~/.openclaw/` pushol, már NEM érvényes — ez a repo az `hu-eval` gyökér.)
+`~/hu-eval/` pushol, már NEM érvényes — ez a repo az `hu-eval` gyökér.)
 
 ## Hol nézz utána, mielőtt írsz
 
