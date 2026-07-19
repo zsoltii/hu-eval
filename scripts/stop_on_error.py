@@ -22,8 +22,16 @@ import requests
 from requests.exceptions import Timeout, ConnectionError
 
 
-class OllamaFatalError(Exception):
-    """A futásnak azonnal meg kell állnia — checkpoint mentendő."""
+class FatalBackendError(Exception):
+    """A futásnak azonnal meg kell állnia — checkpoint mentendő.
+
+    Közös ős minden backend (Ollama, OpenAI-kompatibilis) végzetes hibájához.
+    A run_hulu.py ezt a típust kapja el, hogy backend-független maradjon.
+    """
+
+
+class OllamaFatalError(FatalBackendError):
+    """Visszafelé kompatibilis: Ollama-specifikus végzetes hiba."""
 
 
 # Nincs értelme retry-nak — konfigurációs hiba
@@ -91,3 +99,5 @@ def call_ollama_strict(
         if resp.status_code == 200:
             return resp.json()
         raise OllamaFatalError(f"http_{resp.status_code}: {resp.text[:200]}")
+    # Biztonsági fallback (elméletileg elérhetetlen)
+    raise OllamaFatalError("ollama_unreachable_state")

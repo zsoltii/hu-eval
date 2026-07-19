@@ -31,6 +31,19 @@
 
 > **Bíró modell** (LLM-as-a-Judge): `gemini-3-flash-preview:latest` — 2026-07-14. 09:00 CEST óta nem elérhető (Ollama megszűnés). A reprodukálhatósághoz új bíró modell (pl. `gemini-3-pro-preview`) szükséges. A bíró modell részletes adatai a [Függelék — Verzióinformáció](#verzióinformáció) szekcióban.
 
+### Modell-kvantálás
+
+_KÖTELEZŐ szakasz: minden modell kvantálási szintje itt szerepel. Ha a modell Ollama Cloud alatt fut (a lokális kvantálás nem ismert), akkor `ollama-cloud` az érték — nem hagyható üresen. Új modell futtatása előtt mindig rá kell kérdezni a kvantálásra (q4_K_M, fp16, awq, stb.)._
+
+_Ha egy modellt több kvantálással is futtatunk, minden (modell × kvantálás) kombináció **külön sor** — pl. `qwen3.5:4b` q4_K_M és fp16 külön sorok._
+
+| Modell | Kvantálás |
+|--------|-----------|
+| `<modell1>` | `<q4_K_M / fp16 / awq / ollama-cloud>` |
+| `<modell1>-<kvant2>` | `<q4_K_M / fp16 / awq / ollama-cloud>` |
+| `<modell2>` | `<q4_K_M / fp16 / awq / ollama-cloud>` |
+
+
 ### Időkeret
 
 - **Mérés indítása:** YYYY-MM-DD HH:MM
@@ -59,6 +72,8 @@ _3-5 mondat, ami a legfontosabb megállapításokat összegzi. Kérdések, amikr
 
 ### HuLU eredmények (statisztikai — 6 NLU sub-task)
 
+> **Mit tesztel:** a magyar nyelvű természetes nyelvmegértést (NLU) méri 6 al-benchmarkon: HuCOLA (nyelvtani elfogadhatóság), HuCoPA (közös előfordulás / ok-okozat), HuRTE (szöveg-entailment, háromirányú), HuSST (szentiment, 5 osztály), HuWNLI (lexicalis következtetés, legnehezebb), HuCB (CommitmentBank — beszédaktus/elköteleződés). Kimenet: egyesített accuracy + per-sub-task bontás.
+
 | Modell | Mód | Pontosság (%) | Megjegyzés |
 |--------|-----|---------------:|------------|
 | `<modell1>` | nothink | _._% | _opcionális_ |
@@ -68,12 +83,16 @@ _3-5 mondat, ami a legfontosabb megállapításokat összegzi. Kérdések, amikr
 
 **Legjobb:** `<modell>` — Rövid indoklás.
 
+> **KÖTELEZŐ:** a HuLU overall/összesített pontosság mellett a 6 NLU sub-task (HuCOLA, HuCoPA, HuRTE, HuSST, HuWNLI, HuCB) eredményeit **külön táblázatban, külön-külön is** fel kell tüntetni minden modellre (nothink ÉS think módban). Az összesített HuLU score önmagában nem elég — a per-sub-task bontás a riport kötelező része, nem opcionális. Sub-task hiány esetén a sort nem szabad "—" helyettesítővel kitölteni; a futás elvégzendő.
+
 **Érdekes megfigyelések:**
 
 - _pl. A kisebb modell meglepően jól teljesített egyszerű kérdéseken_
 - _pl. A cloud flash modell a nehéz kérdéseken a flagship szintjén teljesített_
 
 ### MMLU-HU eredmények (statisztikai — 38 tantárgy, 5 kevés lövés)
+
+> **Mit tesztel:** a többválasztós, tantárgy-specifikus tudást (magyar MMLU) 38 tantárgyban, 5-shot felállításban. Méri az általános tudást és rezoninget; kimenet: tantárgyak átlagolt accuracy-ja (0-1).
 
 | Modell | Mód | Pontosság (%) | Megjegyzés |
 |--------|-----|---------------:|------------|
@@ -85,6 +104,8 @@ _3-5 mondat, ami a legfontosabb megállapításokat összegzi. Kérdések, amikr
 **Legjobb:** `<modell>`.
 
 ### HuGME eredmények (generatív, LLM-as-a-Judge — 6 metrika, 300 item)
+
+> **Mit tesztel:** a nyílt, szabad szöveges generálást (NYTK HuGME) LLM-as-a-Judge módszerrel, 6 metrikán (relevance, coherence, fluency, informativeness, harmlessness, overall) 300 itemen. Kimenet: a 6 metrika átlagolt judge-score-ja (0-1).
 
 | Modell | Mód | Judge score (%) | Judged subset | Megjegyzés |
 |--------|-----|----------------:|---------------|------------|
@@ -99,6 +120,8 @@ _3-5 mondat, ami a legfontosabb megállapításokat összegzi. Kérdések, amikr
 
 ### MT-Bench-HU eredmények (generatív, GSB multi-baseline — 24 item × 3 baseline)
 
+> **Mit tesztel:** a kétfordulós (2-turn) párbeszédes képességet és utasításkövetést magyarul, 24 kérdésen (8 kategória × 3). A válaszokat egy bíró modell GSB (good/bad/same) pairwise módon hasonlítja össze 3 baseline modell ellen, counterbalanced (swap) elrendezésben. Kimenet: win-rate (0-1).
+
 | Modell | Mód | Score (%) | W/L/T | Megjegyzés |
 |--------|-----|----------:|-------|------------|
 | `<modell1>` | nothink | _% | W_/L_/T_ | — |
@@ -111,6 +134,8 @@ _3-5 mondat, ami a legfontosabb megállapításokat összegzi. Kérdések, amikr
 > A score 3 baseline (deepseek-v4-flash:cloud, deepseek-v4-pro:cloud, kimi-k2.6:cloud) GSB átlaga. W/L/T az összes baseline-on összesítve.
 
 ### UD Hungarian eredmények (nyelvészeti — CoNLL-U, UPOS/UAS/LAS)
+
+> **Mit tesztel:** a magyar nyelvtani elemzést (Universal Dependencies, Szeged UD test corpus). A modellnek CoNLL-U formátumban kell megadnia a tokenizációt, UPOS címkéket, fej-tokeneket és dependency relációkat. Kimenet: UPOS + UAS + LAS súlyozatlan átlaga (0-1).
 
 | Modell | Mód | Composite | UPOS | UAS | LAS | Megjegyzés |
 |--------|-----|----------:|-----:|----:|----:|------------|

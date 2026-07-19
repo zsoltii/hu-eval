@@ -15,6 +15,11 @@ Használat:
   python run_hulu.py --model qwen3.5:cloud --mode nothink  # no-thinking mód (default)
   python run_hulu.py --model qwen3.5:cloud           # teljes futás (6 task, 2581 prompt)
 
+  # OpenAI-kompatibilis backend (pl. helyi Ollama /v1, ami a cloud modelleket
+  # is átproxizza; később: llama-server vagy egyéb OpenAI-kompatibilis szerver)
+  python run_hulu.py --model gpt-oss:20b-cloud --backend openai --base-url http://localhost:11434/v1
+  python run_hulu.py --model gpt-oss:20b-cloud --backend openai --base-url http://localhost:11434/v1 --limit 10  # smoke test
+
 A --mode flag szabályozza, hogy a modell gondolkodjon-e:
   --mode nothink (default): a gondolkodás el van nyomva, a modell közvetlenül válaszol
   --mode think: a modell gondolkodhat, a gondolkodás a response-ban megjelenik
@@ -45,10 +50,13 @@ import requests
 # Helyi modulok importálása (scripts/ mappa)
 sys.path.insert(0, str(Path(__file__).parent))
 from checkpoint import Checkpoint
-from stop_on_error import call_ollama_strict, OllamaFatalError
+from stop_on_error import call_ollama_strict, OllamaFatalError, FatalBackendError
+from openai_compat import call_openai_strict
 
 
 OLLAMA_URL = "http://localhost:11434"
+DEFAULT_OPENAI_BASE_URL = "http://localhost:11434/v1"
+DEFAULT_OPENAI_API_KEY = "ollama"
 DATASET_PATH = Path("./data/hulu/hulu_std.jsonl")
 DEFAULT_RESULTS_DIR = Path("./results")
 DEFAULT_STATE_DIR = Path("./state")
@@ -79,6 +87,9 @@ def run_benchmark(
     model: str, limit: int | None, reset: bool,
     results_dir: Path, state_dir: Path,
     mode: str = "nothink",
+    backend: str = "ollama",
+    base_url: str = DEFAULT_OPENAI_BASE_URL,
+    api_key: str = DEFAULT_OPENAI_API_KEY,
 ) -> int:
     if mode not in ("think", "nothink"):
         raise ValueError(f"ismeretlen mode: {mode} (lehetséges: think, nothink)")
@@ -177,15 +188,26 @@ def run_benchmark(
                 if item["id"] in completed_set:
                     continue
                 try:
-                    response = call_ollama_strict(
-                        item["prompt"], model,
-                        think=think,
-                        num_predict=(16384 if think else 4096),
-                        timeout=(300 if think else 120),
-                        max_retries=(1 if think else 2),
-                    )
+                    if backend == "openai":
+                        response = call_openai_strict(
+                            item["prompt"], model,
+                            think=think,
+                            num_predict=(16384 if think else 4096),
+                            timeout=(300 if think else 120),
+                            max_retries=(1 if think else 2),
+                            base_url=base_url,
+                            api_key=api_key,
+                        )
+                    else:
+                        response = call_ollama_strict(
+                            item["prompt"], model,
+                            think=think,
+                            num_predict=(16384 if think else 4096),
+                            timeout=(300 if think else 120),
+                            max_retries=(1 if think else 2),
+                        )
                     raw = response.get("response", "").strip()
-                except OllamaFatalError as e:
+                except FatalBackendError as e:
                     # STOP! Checkpoint + log + tájékoztató üzenet
                     cp.mark_stopped(str(e))
                     elapsed = time.time() - start
@@ -196,7 +218,9 @@ def run_benchmark(
                           f"{cp.state['num_correct'] / max(1, done):.3f}")
                     print(f"   State: {state_path}")
                     print(f"   Folytatás: python scripts/run_hulu.py "
-                          f"--model {model}")
+                          f"--model {model}"
+                          f"{' --backend ' + backend if backend == 'openai' else ''}"
+                          f"{' --base-url ' + base_url if backend == 'openai' else ''}")
                     LOG_PATH.parent.mkdir(parents=True, exist_ok=True)
                     with LOG_PATH.open("a", encoding="utf-8") as f:
                         f.write(f"{log_line} | FAILED @ {done}/{total} | "
@@ -205,19 +229,27 @@ def run_benchmark(
 
                 pred = extract_choice(raw, len(item["choices"]))
                 is_ok = pred == item["answer_index"]
+                # Ollama-specifikus meta csak Ollama backendnél értelmes
+                ollama_meta = (
+                    {
+                        "ollama_total_duration_ns": response.get("total_duration"),
+                        "ollama_load_duration_ns": response.get("load_duration"),
+                        "ollama_prompt_eval_count": response.get("prompt_eval_count"),
+                        "ollama_prompt_eval_duration_ns": response.get("prompt_eval_duration"),
+                        "ollama_eval_count": response.get("eval_count"),
+                        "ollama_eval_duration_ns": response.get("eval_duration"),
+                        "ollama_done_reason": response.get("done_reason"),
+                    }
+                    if backend == "ollama" else {}
+                )
                 fout.write(json.dumps({
                     "id": item["id"], "task": item["task"],
                     "prompt": item["prompt"], "choices": item["choices"],
                     "gold": item["answer_index"], "raw_response": raw,
                     "prediction": pred, "correct": is_ok,
                     "mode": mode,
-                    "ollama_total_duration_ns": response.get("total_duration"),
-                    "ollama_load_duration_ns": response.get("load_duration"),
-                    "ollama_prompt_eval_count": response.get("prompt_eval_count"),
-                    "ollama_prompt_eval_duration_ns": response.get("prompt_eval_duration"),
-                    "ollama_eval_count": response.get("eval_count"),
-                    "ollama_eval_duration_ns": response.get("eval_duration"),
-                    "ollama_done_reason": response.get("done_reason"),
+                    "backend": backend,
+                    **ollama_meta,
                 }, ensure_ascii=False) + "\n")
                 fout.flush()
                 os.fsync(fout.fileno())
@@ -283,6 +315,16 @@ def main() -> int:
     p.add_argument("--mode", choices=["think", "nothink"], default="nothink",
                    help="Gondolkodás mód: 'think' (modell gondolkodhat) vagy "
                         "'nothink' (gondolkodás elnyomva, default)")
+    p.add_argument("--backend", choices=["ollama", "openai"], default="ollama",
+                   help="Inferencia backend: 'ollama' (közvetlen /api/generate) "
+                        "vagy 'openai' (OpenAI-kompatibilis /v1/chat/completions, "
+                        "pl. helyi Ollama /v1, llama-server, stb.)")
+    p.add_argument("--base-url", default=DEFAULT_OPENAI_BASE_URL,
+                   help="OpenAI backend esetén a végpont gyökere "
+                        "(default: http://localhost:11434/v1)")
+    p.add_argument("--api-key", default=DEFAULT_OPENAI_API_KEY,
+                   help="OpenAI backend esetén a Bearer token "
+                        "(Ollama esetén tetszőleges, default: 'ollama')")
     p.add_argument("--results-dir", type=Path, default=DEFAULT_RESULTS_DIR)
     p.add_argument("--state-dir", type=Path, default=DEFAULT_STATE_DIR)
     args = p.parse_args()
@@ -291,28 +333,41 @@ def main() -> int:
         show_status(args.model, args.state_dir, args.mode)
         return 0
 
-    # Sanity check: Ollama elérhető?
-    try:
-        r = requests.get(f"{OLLAMA_URL}/api/tags", timeout=5)
-        r.raise_for_status()
-        models = [m["name"] for m in r.json().get("models", [])]
-        if args.model not in models and not args.model.endswith(":cloud"):
-            print(f"⚠️  {args.model} nincs telepítve. "
-                  f"Futtasd: ollama pull {args.model}")
-            try:
-                ans = input("Folytatod cloud modellként? [y/N] ")
-                if ans.lower() != "y":
+    # Sanity check: csak Ollama backendnél ellenőrizzük a helyi szervert
+    if args.backend == "ollama":
+        try:
+            r = requests.get(f"{OLLAMA_URL}/api/tags", timeout=5)
+            r.raise_for_status()
+            models = [m["name"] for m in r.json().get("models", [])]
+            if args.model not in models and not args.model.endswith(":cloud"):
+                print(f"⚠️  {args.model} nincs telepítve. "
+                      f"Futtasd: ollama pull {args.model}")
+                try:
+                    ans = input("Folytatod cloud modellként? [y/N] ")
+                    if ans.lower() != "y":
+                        return 1
+                except EOFError:
                     return 1
-            except EOFError:
-                return 1
-    except Exception as e:
-        print(f"❌ Ollama nem elérhető: {e}")
-        return 1
+        except Exception as e:
+            print(f"❌ Ollama nem elérhető: {e}")
+            return 1
+    else:
+        # OpenAI backend: csak annyit ellenőrzünk, hogy a végpont elérhető-e
+        try:
+            requests.get(f"{args.base_url.rstrip('/')}/models",
+                         headers={"Authorization": f"Bearer {args.api_key}"},
+                         timeout=5)
+        except Exception as e:
+            print(f"⚠️  OpenAI backend ({args.base_url}) nem érhető el: {e}")
+            print("   A futás így is megkezdődik; az első hiba stop-ol (checkpoint).")
 
     return run_benchmark(
         args.model, args.limit, args.reset,
         args.results_dir, args.state_dir,
         args.mode,
+        args.backend,
+        args.base_url,
+        args.api_key,
     )
 
 

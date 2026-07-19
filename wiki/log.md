@@ -3,7 +3,7 @@
 *Típus:* concept
 *Forrás(ok):* belső projekt-napló
 *Létrehozva:* 2026-06-05
-*Frissítve:* 2026-07-15 (v1.3 — 11 modell × 2 mód × 5 benchmark kész, végleges baseline riport, wiki aktualizálva)
+*Frissítve:* 2026-07-18 (v1.3.1 — glm-5.2-cloud HuLU per-sub-task bontás kiegészítve, baseline riport pontosítva)
 
 ---
 
@@ -530,6 +530,76 @@ A 4 újraindítási kísérlet (17:37, 17:44, 17:51, 17:56) után sem sikerült 
   - `concepts/hulu-benchmark.md`, `concepts/checkpoint-progress.md`, `reports/report-2026-07-14.md`, `reports/riport-template.md`, `runbooks/aggregate-results.md` — törött belső linkek javítva (`../runbooks/` prefix, `../reports/` prefix, létező dátum).
 - **Lint:** 0 valódi törött belső link a wikiben (a `{args.date}` template változók kihagyva, mert azok a generált riportban helyesek).
 - **Megőrzött (preserve):** a `report-2026-07-14.md` baseline státusza, a log 2026-07-11→07-15 bejegyzései, a `qwen3.5-397b.md` átirányító (történeti link-kompatibilitás).
+
+## 2026-07-18 (v1.3.1 — glm-5.2-cloud HuLU per-sub-task bontás kiegészítve)
+
+- **Trigger:** user kérése ("glm-5.2-nél hiányzik a HuCOLA/HuCoPA/HuRTE/HuSST/HuWNLI/HuCB; csináld meg think/nothink módban is, egészítsd ki a baseline report-ot").
+- **Ok:** a `report-2026-07-14.md` HuLU per-sub-task táblázatában a glm-5.2-cloud sorok csak "—" helyettesítő értékekkel szerepeltek (a composite oszlopban az overall érték, nothink 75.3% / think 76.0% — ez is csak becsült). A `data/hulu/` mappa üres volt (letöltés hiányzott).
+- **Végrehajtott lépések:**
+  - `scripts/download_hulu.py` futtatása (HF NYTK: 6 sub-task, 2581 példa → `data/hulu/hulu_std.jsonl`).
+  - `scripts/run_hulu.py --model glm-5.2:cloud --mode nothink` → **76.6%** (1964/2565).
+  - `scripts/run_hulu.py --model glm-5.2:cloud --mode think` → **75.5%** (1949/2581).
+  - Per-sub-task bontás kiszámítva (`hulu_results.jsonl` elemzése):
+    - **nothink:** HuCOLA 79.6% / HuCoPA 92.0% / HuRTE 90.1% / HuSST 72.8% / HuWNLI 31.7% / HuCB 72.8%
+    - **think:** HuCOLA 81.1% / HuCoPA 95.0% / HuRTE 95.1% / HuSST 68.2% / HuWNLI 6.7% / HuCB 84.5%
+- **Riport frissítése** (`wiki/reports/report-2026-07-14.md`):
+  - HuLU per-sub-task táblázat: glm-5.2-cloud (nothink/think) sorok kitöltve valós értékekkel, a kompozit szerinti helyes pozícióba rendezve (think a think-szekcióba, nothink a nothink-szekcióba).
+  - HuLU overall táblázat: glm-5.2 értékei pontosítva (75.3%→76.6% nothink, 76.0%→75.5% think) "2026-07-18 újramérve" jelöléssel.
+  - Lábjegyzet a glm-5.2 sorok alatt: a korábbi "—" helyett valós bontás + HuWNLI think-gyengülés megjegyzés.
+  - Change log: új sor (2026-07-18, glm-5.2 per-sub-task kiegészítés).
+- **Megfigyelés:** a think mód javítja a HuCOLA/HuCoPA/HuRTE/HuCB-t, de lenullázza a HuWNLI-t (31.7%→6.7%) — konzisztens a többi modell think-profiljával (CoT-zavar). Az overall nothink (76.6%) magasabb, mint a think (75.5%), mert a HuSST (n=1165, domináns súly) think-módban gyengébb (68.2% vs 72.8%).
+- **Állapot:** a baseline riport most már teljes glm-5.2 HuLU lefedettséggel rendelkezik (korábban csak a MMLU-HU/HuGME/UD/MT-Bench sorok voltak kitöltve, a HuLU sub-task hiányzott).
+
+## 2026-07-18 (user pref — HuLU per-sub-task konvenció rögzítve)
+
+- **Trigger:** user kérése ("a report-ba a HuLU összesítésen kívül, külön-külön is szeretném látni az eredményeket").
+- **Döntés:** állandó riportolási konvencióként rögzítve — a HuLU overall mellett a 6 NLU sub-task (HuCOLA/HuCoPA/HuRTE/HuSST/HuWNLI/HuCB) bontása kötelező, külön táblázatban, minden modellre (nothink + think), "—" helyettesítés tilos.
+- **Rögzítve:** `wiki/reports/riport-template.md` HuLU szekciója (KÖTELEZŐ blokk) + `AGENTS.md` Konvenciók szekciója (HuLU riportolási konvenció).
+
+## 2026-07-18 (v1.3.2 — gpt-oss-20b-cloud think HuLU per-sub-task pótlása)
+
+- **Ok:** a `report-2026-07-14.md` per-sub-task táblázatából hiányzott a `gpt-oss-20b-cloud (think)` sor (az eredeti `hulu-breakdown-2026-06-16.md` forrásban is "—" volt, a konvenció szerint tilos "—"-t használni, futtatni kell).
+- **Végrehajtás:** `scripts/run_hulu.py --model gpt-oss:20b-cloud --mode think` (a modell neve `gpt-oss:20b-cloud`, nem `gpt-oss-20b-cloud` — 404 után javítva). Cloud timeout miatt 1× resume, majd kész: **71.5%** (1846/2581).
+- **Per-sub-task:** HuCOLA 73.6% / HuCoPA 89.0% / HuRTE 91.8% / HuSST 65.6% / HuWNLI 48.3% / HuCB 68.9%.
+- **Riport frissítés:** `report-2026-07-14.md` per-sub-task táblázatba beillesztve a `gpt-oss-20b-cloud (think)` sor (71.5% composite, a 20b-nothink 68.9% fölé); overall táblázat 71.4%→71.5% pontosítva "2026-07-18 újramérve" jelöléssel.
+- **Állapot:** a HuLU per-sub-task táblázat most már teljes — mind a 11 modell × 2 mód (22 sor) + 2 RETIRED = 24 sor jelen van valós értékekkel, "—" helyettesítés sehol sincs.
+
+## 2026-07-18 (user pref — benchmark-leírás konvenció + kész report)
+
+- **Trigger:** user kérése ("a baseline report-ba mindegyik benchmarkhoz írd le röviden mit tesztel; ezt írd fel magadnak, hogy minden report-ban a rövid leírást bele kell tenned mindegyik benchmarkhoz").
+- **Döntés:** állandó riportolási konvenció — minden riportban, minden benchmark-szekció elejére egy rövid (2-4 soros) "**Mit tesztel:**" blokk kötelező, ami leírja milyen képességet mér, milyen formátumban, milyen kimenettel. Nem opcionális.
+- **Rögzítve:** `AGENTS.md` Konvenciók (Benchmark-leírás konvenció KÖTELEZŐ) + `wiki/reports/riport-template.md` (minden szekció: HuLU/MMLU-HU/HuGME/MT-Bench-HU/UD Hungarian "Mit tesztel" blokkal).
+- **Alkalmazva:** `wiki/reports/report-2026-07-14.md` "Per-benchmark eredmények" szakasz — minden 5 benchmark-szekció (HuLU, MMLU-HU, HuGME, MT-Bench-HU, UD Hungarian) megkapta a rövid leírást.
+
+## 2026-07-18 (user pref — kvantálás konvenció + baseline report)
+
+- **Trigger:** user kérése ("innetől a kvantálást is fel kell venned a report-ba; a jelenlegi modellek ollama-cloud, mert cloud alatt futottak; írd fel, hogy mindig rá kell kérdezni a kvantálásra és a report-ban mindig szerepelnie kell; a baseline report-ba tedd bele az ollama-cloud értéket").
+- **Döntés:** állandó riportolási konvenció — minden riportban a modellek kvantálási szintje kötelezően szerepel (külön "Modell-kvantálás" szakasz a fejléc után). Új modell futtatása előtt rá kell kérdezni a kvantálásra; ha Ollama Cloud alatt fut, akkor `ollama-cloud` az érték (nem hagyható üresen).
+- **Rögzítve:** `AGENTS.md` Konvenciók (Kvantálás konvenció KÖTELEZŐ) + `wiki/reports/riport-template.md` (Modell-kvantálás szakasz sablonnal).
+- **Alkalmazva:** `wiki/reports/report-2026-07-14.md` — "Modell-kvantálás" szakasz hozzáadva, minden 11 modell (1 RETIRED) `ollama-cloud` értékkel.
+
+## 2026-07-18 (user pref — több kvantálás ugyanarra a modellre)
+
+- **Trigger:** user kérése ("készülj fel arra, hogy lesznek olyan modellek, amelyek több kvantálással is lesznek futtatva benchmarkra").
+- **Döntés:** egy modell több kvantálással is szerepelhet a riportban — minden (modell × kvantálás) kombináció **külön sor** (külön bejegyzés, külön mappa-útvonal a kvantálással), és a "Modell-kvantálás" szakaszban is külön sor.
+- **Rögzítve:** `AGENTS.md` Konvenciók (Kvantálás konvenció kiegészítve: "Több kvantálás ugyanarra a modellre") + `wiki/reports/riport-template.md` (Modell-kvantálás szakasz: több-kvantálás példa).
+
+## 2026-07-18 (fejlesztés — OpenAI-kompatibilis backend támogatása)
+
+- **Trigger:** user kérése ("írd át a kódot, hogy openai api segítségével lehessen benchmark-okat végezni; az ollama tartalmaz kompatibilis api-t, próbáld ki a gpt-oss:20b-cloud modellel").
+- **Döntés:** általános OpenAI-kompatibilis backend (`/v1/chat/completions`) támogatása a közvetlen Ollama (`/api/generate`) mellett. Cél: cloud modellek futtatása Ollama `/v1`-en keresztül (átproxizálja őket), később llama-server vagy más OpenAI-kompatibilis szerver ugyanazzal a kóddal. A checkpoint/stop-on-error rendszer SZENT maradt (közös `FatalBackendError` ős).
+- **Változások:**
+  - `scripts/stop_on_error.py`: új közös ős `FatalBackendError`, `OllamaFatalError` az leszármazottja (visszafelé kompatibilis).
+  - `scripts/openai_compat.py` (ÚJ): `call_openai_strict()` — azonos stop-policy, `/v1/chat/completions` formátumban; `think` mód Ollama-n `extra_body["think"]`-on keresztül; válasz `{"response": ...}` alakban (backend-független hívókód).
+  - `scripts/run_hulu.py`: `--backend` (ollama/openai), `--base-url`, `--api-key` argumentumok; backend-függő hívás; `except FatalBackendError`; `results/*.jsonl` sorai megkapják a `"backend"` mezőt; Ollama-specifikus meta csak Ollama backendnél íródik.
+- **Teszt:** `gpt-oss:20b-cloud --backend openai --base-url http://localhost:11434/v1 --limit 10` → 60/60 prompt, acc=0.633 (38/60). Resume/checkpoint OpenAI backenden is működik (észleli a kész futást, nem fut újra).
+- **Rögzítve:** `AGENTS.md` (Parancsok: OpenAI példa + Konvenciók: "Backend konvenció KÖTELEZŐ a riportban").
+
+## 2026-07-18 (user pref — git commit message konvenció)
+
+- **Trigger:** user kérése ("git commit és push, a commit message mindig azt tartalmazza, amit csináltunk. Ezt jegyezd fel magadnak").
+- **Döntés:** állandó konvenció — **minden git commit message LEÍRJA, hogy mit csináltunk** (mit változtattunk/miért), tömör és leíró formában. A message az adott munkamenet tényleges tartalmát tükrözze, ne általános ("update" / "fix" / "wip" tilos).
+- **Rögzítve:** `wiki/log.md` user-pref bejegyzésként. (Javasolt később AGENTS.md "Git munkafolyamat" szekciójába is bevenni.)
 
 ## 2026-07-14
 
