@@ -601,6 +601,14 @@ A 4 újraindítási kísérlet (17:37, 17:44, 17:51, 17:56) után sem sikerült 
 - **Döntés:** állandó konvenció — **minden git commit message LEÍRJA, hogy mit csináltunk** (mit változtattunk/miért), tömör és leíró formában. A message az adott munkamenet tényleges tartalmát tükrözze, ne általános ("update" / "fix" / "wip" tilos).
 - **Rögzítve:** `wiki/log.md` user-pref bejegyzésként. (Javasolt később AGENTS.md "Git munkafolyamat" szekciójába is bevenni.)
 
+## 2026-07-19 (felhasználó kérés — datasets/ mappa létrehozása)
+
+- **Trigger:** user kérése ("a projekt mappában hozz létre egy datasets mappát és az összes benchmark dataset-jét másold oda, valamint wiki-be ezt jegyezd fel, hogy másik gépen tudjuk használni").
+- **Megvalósítva:**
+  - `datasets/` mappa létrehozva a projekt gyökerében, tartalma: `hulu/`, `mmlu_hu/`, `hugme/`, `mt_bench_hu/`, `ud_hungarian/` (5 benchmark, összesen ~6.5 MB, 7 fájl). Forrás: `/home/openclaw/.openclaw/wiki/hu-eval/data/`.
+  - `.gitignore` kiegészítve `datasets/` sorral (nem verziókövetett — átvihető, de nem forrás).
+  - `wiki/runbooks/setup-kornyezet.md` kiegészítve "6. Datasetek előkészítése (offline másolás)" szekcióval — leírja a `datasets/` → `data/` másolás/symlink módját és az online letöltési alternatívát.
+
 ## 2026-07-14
 
 - 20:14 — **`priority_judge.sh` BEFEJEZŐDÖTT**. A teljes pipeline kész: 11 modell × 2 mód × 5 benchmark, 97088 item feldolgozva, ~1029 ó futásidő. Az utolsó UD think modell (qwen3.5:cloud) 449/449-re futott le. A `build_status_table.py` is lefutott, státusz táblázat frissítve. A `priority_judge.sh` és a `watchdog_priority.sh` kiléptek.

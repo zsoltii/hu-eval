@@ -4,6 +4,10 @@ data/
 logs/
 state/
 
+# Datasetek másolata (másik gépre átvihető, de nem forrás — az eredeti
+# források a letöltő scriptekből / a datasets/ mappa manuális másolásából jönnek)
+datasets/
+
 # Python bytecode
 __pycache__/
 *.pyc

@@ -163,6 +163,52 @@ sudo systemctl start ollama
 
 Ha `models` listát látsz (pl. `qwen3.5:4b`, `qwen3.5:0.8b`), akkor minden kész.
 
+### 6. Datasetek előkészítése (offline másolás)
+
+A benchmark-futtatáshoz 5 dataset kell. Ezek a `datasets/` mappában vannak (git **nem** követi — a `.gitignore`-ban van, mérete ~6.5 MB). Két úton juthatunk hozzájuk:
+
+**A) Offline másolás (ajánlott másik gépen):**
+
+A `datasets/` mappát át kell másolni az eredeti gépről (pl. `scp`, USB, `rsync`). A mappa szerkezete:
+
+```
+datasets/
+├── hulu/           hulu_std.jsonl, hulu_raw.jsonl
+├── mmlu_hu/        mmlu_hu_std.jsonl
+├── hugme/          prompts.jsonl
+├── mt_bench_hu/    questions.jsonl
+└── ud_hungarian/   hu_szeged-ud-test.conllu, ud_hungarian_std.jsonl
+```
+
+A scriptek a `./data/...` útvonalat használják. Tehát a dataseteket a `data/` mappába kell tenni (vagy symlinkelni). A legegyszerűbb:
+
+```bash
+# A datasets/ tartalmát másoljuk a data/ alá (a scriptek által várt útvonal)
+cp -r datasets/* data/
+```
+
+Vagy symlinkkel (helytakarékos, ha a datasets/ és a data/ külön fájlrendszeren van):
+
+```bash
+ln -s ../datasets/hulu data/hulu
+ln -s ../datasets/mmlu_hu data/mmlu_hu
+ln -s ../datasets/hugme data/hugme
+ln -s ../datasets/mt_bench_hu data/mt_bench_hu
+ln -s ../datasets/ud_hungarian data/ud_hungarian
+```
+
+**B) Online letöltés (ha a `datasets/` nincs meg):**
+
+```bash
+python scripts/download_hulu.py            # HuLU (NytK HF-ről, 2581 példa)
+python scripts/download_mmlu_hu.py         # MMLU-HU (NYTK/hu-mmlu, 38 tantárgy)
+python scripts/download_ud_hungarian.py    # UD Hungarian (CoNLL-U GitHub-ról)
+# HuGME (prompts.jsonl) és MT-Bench-HU (questions.jsonl) jelenleg nincs
+# download script — ezeket kézzel kell előállítani vagy a datasets/-ből másolni.
+```
+
+Az így letöltött fájlok a `data/<benchmark>/` mappába kerülnek.
+
 ## Gyakori buktatók
 
 ### A) A `conda` parancs nem található
