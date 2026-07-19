@@ -619,3 +619,29 @@ A 4 újraindítási kísérlet (17:37, 17:44, 17:51, 17:56) után sem sikerült 
 - 21:09 — Első terv üzenet elküldve a thread-be.
 - 21:11 — Felhasználó: "mindent csinálj meg, végén ellenőrizd, óránként státuszt kérek".
 - 19:53 — Eredeti kérés: terv készítése a magyar nyelvi benchmark suite-hoz.
+
+## 2026-07-19 (v1.3.3 — bíró modell váltás: gemini-3-flash-preview → deepseek-v4-pro:cloud)
+
+- **Trigger:** user döntése — a `gemini-3-flash-preview:latest` bíró modell 2026-07-14. 09:00 CEST óta nem elérhető (Ollama megszűnés), a már letesztelt modellek közül a baseline riport és a `llm-as-judge.md` preferencia-sorrend (`gemini > deepseek-v4-pro`) alapján a `deepseek-v4-pro:cloud` a legalkalmasabb utód.
+- **Végrehajtott változtatások (scripts/):**
+  - `scripts/judge_hugme.py` — `JUDGE_MODEL = "gemini-3-flash-preview:latest"` → `"deepseek-v4-pro:cloud"` (L23), docstring frissítve.
+  - `scripts/judge_mt_bench.py` — `JUDGE_MODEL` ugyanaz (L23), docstring frissítve. A `BASELINE_MODEL = "deepseek-v4-flash:cloud"` változatlan (ez a GSB összehasonlítási alap, nem a bíró).
+  - `scripts/run_hugme.py` — docstring frissítve (L6).
+  - `scripts/rejudge_hugme.py` / `rejudge_mt_bench.py` — NEM kell módosítani, importálják az új `JUDGE_MODEL`-t.
+  - `scripts/priority_judge.sh` / `queue_runner.sh` — komment/echo frissítve (gemini → deepseek-v4-pro:cloud).
+  - `python -m py_compile` ellenőrizve: OK. Ollama szerveren a `deepseek-v4-pro:cloud` elérhető (FP8, 1.6T paraméter, 524288 kontextus).
+- **SZENT SZABÁLY rögzítve (self-bias):** a mindenkori bíró modell NEM értékelheti saját magát. Mivel a `deepseek-v4-pro` is benchmark-modell, a saját HuGME/MT-Bench-HU sorait nem szabad saját magával pontozni — ezeket független bíróval (pl. `qwen3.5:cloud` vagy `glm-5.2:cloud`) vagy a self-bias szabály szerinti kivételzéssel kell kezelni. Rögzítve: `wiki/concepts/llm-as-judge.md` (§4 Self-bias + "Melyik bíró modellt mikor?" táblázat + "Frissítve" fejléc).
+- **Végrehajtott változtatások (wiki/):**
+  - `concepts/llm-as-judge.md` — bíró-sorrend (`gemini megszűnt > deepseek-v4-pro hivatalos bíró`), self-bias SZENT szabály kifejtve, "Melyik bíró modellt mikor?" táblázat frissítve (minden sor `deepseek-v4-pro:cloud`), fejléc dátum 2026-07-19.
+  - `reports/report-2026-07-14.md` — fejléc "Bíró modell" (L19) + lábjegyzet (L41) frissítve deepseek-v4-pro:cloud-ra + self-bias korlát.
+  - `entities/gemini-3-flash.md` — státusz: "helyette deepseek-v4-pro:cloud a hivatalos bíró (2026-07-19)", kapcsolódás frissítve.
+  - `reports/riport-template.md` — bíró modell lábjegyzet frissítve (jövőbeli riportok sablonja).
+  - `overview.md` — modell-pool táblázat: gemini sor "judge (megszűnt)" → helyette deepseek hivatkozás.
+  - `concepts/hugme-benchmark.md` — bíró prioritási sorrend (1. deepseek-v4-pro, 2. független bíró self-bias-ra, 3. gemini backup megszűnt) + SZENT self-bias szabály.
+  - `concepts/mt-bench-hu.md` — bíró költség szakasz frissítve.
+  - `entities/kimi-k2.6.md` — bíró pool hivatkozás: deepseek-v4-pro:cloud (2026-07-19).
+  - `runbooks/llm-judge-prompt-template.md` — példakód `JUDGE_DEFAULT` + `--judge-model` példák deepseek-v4-pro:cloud.
+  - `runbooks/aggregate-results.md` — bíró modell (v1.1), num_judged mező, hibakereső táblázat, "Új bíró modell" szakasz frissítve.
+  - **Megőrzött (preserve):** a történeti riportok (`benchmark-statusz-*`, `eredmeny-osszesites-2026-07-14`) és a `log.md` 2026-06-07/2026-07-11 bejegyzései — ezek akkori állapotot rögzítenek, nem módosítjuk (csak a kanonikus leíró oldalakat és a jövőbeli riport sablonját).
+- **Következmény:** a régi gemini-3-flash-preview HuGME/MT-Bench eredmények nem reprodukálhatók; a HuGME és MT-Bench-HU benchmarkokat újra kell futtatni a `deepseek-v4-pro:cloud` bíróval (a deepseek saját sorai független bíróval). A `rejudge_hugme.py` és `rejudge_mt_bench.py` scriptek készen állnak.
+

@@ -1,5 +1,5 @@
 #!/bin/bash
-# priority_judge.sh — A gemini-3-flash-preview bíró 3 nap múlva megszűnik.
+# priority_judge.sh — A gemini-3-flash-preview bíró megszűnt (2026-07-14), helyette deepseek-v4-pro:cloud.
 # Ez a script ELŐSZÖR a bíró-igényes feladatokat futtatja (HuGME, MT-Bench rejudge),
 # CSAK UTÁNA az UD refuttatást.
 
@@ -12,14 +12,14 @@ cd "$PROJ"
 source /home/openclaw/anaconda3/etc/profile.d/conda.sh
 conda activate eval-hu
 
-echo "$(date): priority_judge indítása (gemini-3-flash-preview határidő: 3 nap)"
+echo "$(date): priority_judge indítása (bíró: deepseek-v4-pro:cloud)"
 echo "  Prioritás: HuGME rejudge → MT-Bench rejudge → UD refuttatás"
 echo ""
 
 # 1. HuGME rejudge — 22 modell × 299 item × 6 metrika = 39 468 bíró hívás
 #    Becsült idő: ~22 ó (22 modell × 60p)
 echo "════════════════════════════════════════════════════"
-echo "  [1/3] HuGME rejudge (gemini-3-flash-preview)"
+echo "  [1/3] HuGME rejudge (deepseek-v4-pro:cloud)"
 echo "════════════════════════════════════════════════════"
 if [ -f "$LOG_DIR/priority_hugme_done" ]; then
     echo "  ⏭️  Már kész (marker fájl: $LOG_DIR/priority_hugme_done) — átugrás"
@@ -33,7 +33,7 @@ fi
 # 2. MT-Bench rejudge — 22 modell × 24 item × 3 baseline × 4 GSB hívás = 6 336 bíró hívás
 #    Becsült idő: ~1.3 ó (20 modell × 4p)
 echo "════════════════════════════════════════════════════"
-echo "  [2/3] MT-Bench rejudge (gemini-3-flash-preview, multi-baseline)"
+echo "  [2/3] MT-Bench rejudge (deepseek-v4-pro:cloud, multi-baseline)"
 echo "════════════════════════════════════════════════════"
 if [ -f "$LOG_DIR/priority_mt_bench_done" ]; then
     echo "  ⏭️  Már kész (marker fájl: $LOG_DIR/priority_mt_bench_done) — átugrás"

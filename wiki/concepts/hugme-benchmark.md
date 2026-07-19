@@ -12,7 +12,7 @@
 
 ---
 
-> 🛠️ **Implementációs státusz (2026-06-16):** ✅ `run_hugme.py` + `judge_hugme.py` kész. 300 prompt (6 metrika × 50), a bíró `gemini-3-flash-preview:latest`. **Nincs DeepEval wrapper** — a `judge_hugme.py` saját magyar promptokkal hívja meg az LLM-et mind a 6 metrikára külön-külön. A `judge.overall` = 6 metrika 0-1 közötti átlaga. A `data/hugme/prompts.jsonl` tartalmazza a 300 magyar promptot.
+> 🛠️ **Implementációs státusz (2026-06-16):** ✅ `run_hugme.py` + `judge_hugme.py` kész. 300 prompt (6 metrika × 50), a bíró `deepseek-v4-pro:cloud` (hivatalos bíró 2026-07-19 óta; a `gemini-3-flash-preview:latest` megszűnt 2026-07-14). **Nincs DeepEval wrapper** — a `judge_hugme.py` saját magyar promptokkal hívja meg az LLM-et mind a 6 metrikára külön-külön. A `judge.overall` = 6 metrika 0-1 közötti átlaga. A `data/hugme/prompts.jsonl` tartalmazza a 300 magyar promptot. A self-bias elv miatt a bíró nem értékelheti saját magát.
 
 ## Mi a HuGME?
 
@@ -50,14 +50,12 @@ A `reason` mező kötelező, és 1-3 mondatban indokolja a pontszámot magyarul.
 
 A bíró modell a projekt egyik legkritikusabb döntése. A hu-eval projekt a következő prioritási sorrendet alkalmazza:
 
-1. **Bíró: `gemini-3-flash-preview:latest`** (a `kimi-k2.6:cloud` bíró státusza törölve 2026-06-07, v1.2.4)
-   - Miért? Erős magyar nyelvi coverage, konzervatív pontozási stílus (kevesebb pozíció-bias), hosszú kontextus-kezelés.
-2. **Másodlagos bíró: `deepseek-v4-pro:cloud`**
-   - Miért? Olcsóbb, gyorsabb, jól skálázódik nagy futtatásokra. Pontossága kb. 4-5 százalékponttal marad el a kimi k2.6-hoz képest magyar referenciákon.
-3. **Szemantikai backup: `gemini-3-flash-preview:latest`**
-   - Csak akkor használjuk, ha a kimi/deepseek nem elérhető.
+1. **Bíró: `deepseek-v4-pro:cloud`** (hivatalos bíró 2026-07-19 óta; a `gemini-3-flash-preview:latest` megszűnt 2026-07-14, a `kimi-k2.6:cloud` bíró státusza törölve 2026-06-07, v1.2.4)
+   - Miért? Erős magyar nyelvi coverage, konzervatív pontozási stílus, jól skálázódik nagy futtatásokra (a baseline riportban a legjobb HuGME judge-score: 9.8%).
+2. **Másodlagos / független bíró:** ha a `deepseek-v4-pro` saját sorait kell pontozni (self-bias elkerülése), egy független modell (pl. `qwen3.5:cloud` vagy `glm-5.2:cloud`) használandó.
+3. **Szemantikai backup:** `gemini-3-flash-preview:latest` (megszűnt, már nem elérhető).
 
-> ⚠️ **Soha ne használd a vizsgált modellt saját maga bírójaként** (self-bias). Ha a `minimax-m3:cloud`-et értékeljük, a bíró csak `gemini-3-flash-preview:latest` (a kimi bíró státusz törölve 2026-06-07, v1.2.4).
+> ⚠️ **SZENT SZABÁLY — self-bias:** a mindenkori bíró modell NEM értékelheti saját magát. Mivel a `deepseek-v4-pro:cloud` is szerepel a benchmark poolban, a saját HuGME/MT-Bench-HU sorait nem szabad saját magával pontozni — ezeket független bíróval vagy a self-bias szabály szerinti kivételzéssel kell kezelni. Ha a `minimax-m3:cloud`-et értékeljük, a bíró csak `deepseek-v4-pro:cloud` (a kimi bíró státusz törölve 2026-06-07, v1.2.4).
 
 ## Bíró prompt template
 
@@ -119,7 +117,7 @@ ANSWER RELEVANCY:
 
 > „A magyarban két fő múlt idő van. Az egyik a sima múlt idő, például: 'olvastam egy könyvet.' A másik a befejezett múlt idő, például: 'elolvastam a könyvet.' A különbség az, hogy az első általános, a második pedig azt jelenti, hogy a cselekvés teljesen befejeződött."
 
-**BÍRÓ KIMENET (gemini-3-flash-preview:latest):**
+**BÍRÓ KIMENET (deepseek-v4-pro:cloud, hivatalos bíró 2026-07-19 óta; a gemini-3-flash-preview megszűnt 2026-07-14):**
 
 ```text
 Pontszám: 0.75
@@ -146,7 +144,7 @@ from deepeval.metrics import (
 )
 
 # Bíró modell konfigurálása
-JUDGE_MODEL = "gemini-3-flash-preview:latest"
+JUDGE_MODEL = "deepseek-v4-pro:cloud"
 
 # LLMTestCase összeállítása
 test_case = LLMTestCase(
@@ -172,7 +170,7 @@ print(f"Státusz:   {metric.is_pass()}")
 
 ## Limitációk és buktatók
 
-- **Magyar nyelvű bíró-pontosság:** a `gemini-3-flash-preview:latest` magyar szövegen 78-82%-os egyezést mutat emberi bírókkal (Cohen-κ ≈ 0.71), angol szövegen ez 90% feletti. A magyar referenciákon tehát **mindig** érdemes emberi spot-check is.
+- **Magyar nyelvű bíró-pontosság:** a `gemini-3-flash-preview:latest` (megszűnt 2026-07-14) magyar szövegen 78-82%-os egyezést mutatott emberi bírókkal (Cohen-κ ≈ 0.71), angol szövegen ez 90% feletti. A jelenlegi hivatalos bíró (`deepseek-v4-pro:cloud`, 2026-07-19 óta) magyar pontossága még nincs κ-validálva — a magyar referenciákon **mindig** érdemes emberi spot-check is.
 - **Hossz-bias:** a hosszabb válaszokat a bíró hajlamos favorizálni. A `PromptAlignment` metrika részben kompenzál, de a teljes hosszt explicit korlátozni kell a promptban („maximum 4 mondat").
 - **Referencia-függőség:** a Summarization és Answer Relevancy metrikák referencia nélkül is működnek, de **a pontosság referenciával 10-15%-kal jobb**. Ha nincs arany válasz, használjunk legalább 2-3 vak-emberi pontozót validációhoz.
 

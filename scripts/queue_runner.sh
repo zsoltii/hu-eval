@@ -5,7 +5,7 @@ cd /home/openclaw/.openclaw/wiki/hu-eval
 QUEUE_LOG="logs/queue_runner_$(date +%Y%m%d_%H%M).log"
 echo "$(date) - queue_runner indul: $QUEUE_LOG" | tee "$QUEUE_LOG"
 
-# Benchmark modellek — judge modellek (gemini-3-flash-preview) NEM kerülnek ide.
+# Benchmark modellek — judge modellek (deepseek-v4-pro:cloud) NEM kerülnek ide.
 # A kimi-k2.6:cloud benchmark modellként fut (bíró státusz törölve v1.2.4).
 # A minimax-m2.5:cloud és minimax-m2.7:cloud törölve (régi modellek, 2026-06-08).
 # A deepseek-v4-pro:cloud és minimax-m3:cloud think módjai 2026-06-09 hozzáadva.

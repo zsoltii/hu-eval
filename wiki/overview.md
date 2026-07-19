@@ -45,7 +45,7 @@ A `Szerep` oszlop jelzi, hogy a modell benchmark-modell (saját maga futtatja a 
 | `gpt-oss:20b-cloud` | cloud | benchmark | leggyengőbb aktív (MMLU 46%) |
 | `qwen3.5:cloud` | cloud | benchmark | legerősebb HuLU (78.1% think) |
 | `qwen3-next:80b-cloud` | cloud | benchmark | ⚠️ RETIRED 2026-06-16 (HTTP 410) |
-| `gemini-3-flash-preview:latest` | cloud | **judge** | bíró (megszűnt 2026-07-14. 09:00 CEST) |
+| `gemini-3-flash-preview:latest` | cloud | **judge (megszűnt)** | bíró volt, megszűnt 2026-07-14. 09:00 CEST; helyette `deepseek-v4-pro:cloud` a hivatalos bíró (2026-07-19) |
 
 ### Benchmark lista (v1.3)
 

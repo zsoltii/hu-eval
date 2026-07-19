@@ -6,7 +6,7 @@ A régi baseline (deepseek-v4-flash) MMLU-HU 52% — túl gyenge, mindenki nyer 
 Ez a script:
   1. A meglévő mt_bench_hu_results.jsonl-t használja (modell válaszai).
   2. Több baseline modell válaszait gyűjti össze (a meglévő baseline JSONL-ekből, vagy generálja).
-  3. Minden baseline-zsal GSB pontozást végez (gemini-3-flash-preview bíróval).
+  3. Minden baseline-zsal GSB pontozást végez (deepseek-v4-pro:cloud bíróval).
   4. A végső win rate = átlagos win rate az összes baseline-ra.
   5. A meglévő mt_bench_hu_judged.jsonl-t kiegészíti VAGY felülírja.
 

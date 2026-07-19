@@ -29,7 +29,7 @@
 | Operator | `openclaw` |
 | Riport státusz | `draft` / `final` |
 
-> **Bíró modell** (LLM-as-a-Judge): `gemini-3-flash-preview:latest` — 2026-07-14. 09:00 CEST óta nem elérhető (Ollama megszűnés). A reprodukálhatósághoz új bíró modell (pl. `gemini-3-pro-preview`) szükséges. A bíró modell részletes adatai a [Függelék — Verzióinformáció](#verzióinformáció) szekcióban.
+> **Bíró modell** (LLM-as-a-Judge): `deepseek-v4-pro:cloud` — a `gemini-3-flash-preview:latest` 2026-07-14. 09:00 CEST óta nem elérhető (Ollama megszűnés), helyette ez a hivatalos bíró (2026-07-19 óta). **Self-bias korlát (SZENT):** a bíró modell nem értékelheti saját magát — a `deepseek-v4-pro` saját HuGME/MT-Bench-HU sorait független bíróval vagy kivételzéssel kell kezelni. A bíró modell részletes adatai a [Függelék — Verzióinformáció](#verzióinformáció) szekcióban.
 
 ### Modell-kvantálás
 
@@ -229,7 +229,7 @@ A vizuális áttekintéshez **két heatmap** készül (matplotlib, RdYlGn színs
 ### Limitációk
 
 - _pl. A bíró modell saját maga is egy cloud modell, ezért elfogult lehet_
-- _pl. A bíró modell (gemini-3-flash-preview) megszűnt — a HuGME és MT-Bench eredmények nem reprodukálhatóak_
+- _pl. A bíró modell (deepseek-v4-pro:cloud) is egy benchmark-modell, ezért a saját sorait független bíróval kell pontozni (self-bias)_
 - _pl. A CoT-strip parser a CoNLL-U-t a válasz végén keresi, de a modellek középre is tehetik_
 - _pl. A lokális mérések nem készültek el (RTX 4090 benchmark tervben)_
 
@@ -267,7 +267,7 @@ A mérések reprodukálásához szükséges:
 | Komponens | Verzió |
 |-----------|--------|
 | Benchmark suite | vX.Y.Z |
-| Bíró modell | `<modell>:<verzió>` (gemini-3-flash-preview:latest 2026-07-14-ig) |
+| Bíró modell | `<modell>:<verzió>` (jelenleg: deepseek-v4-pro:cloud, 2026-07-19 óta; gemini-3-flash-preview:latest 2026-07-14-ig) |
 | Prompt template | vX.Y |
 | Kiértékelő script | commit `<hash>` |
 | Conda env | `eval-hu` (Python 3.11) |

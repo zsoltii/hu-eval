@@ -8,7 +8,7 @@
 - Belső projekt: hu-eval overview — lásd [Overview](../overview.md)
 
 *Létrehozva:* 2026-06-06
-*Frissítve:* 2026-06-06
+*Frissítve:* 2026-07-19 (bíró modell váltás: gemini-3-flash-preview → deepseek-v4-pro:cloud; self-bias SZENT szabály rögzítve)
 
 ---
 
@@ -82,7 +82,9 @@ A bíró modell kiválasztásának szempontjai (súlyozott lista):
 | **Költség / sebesség** | 15% | 1000+ hívásnál a költség domináns. |
 | **Bias-mentesség** | 10% | A 4 fő biai típusra ismert mitigációs technikákat ismerjen. |
 
-A hu-eval projekt konkrét sorrendje: `gemini-3-flash-preview:latest` > `deepseek-v4-pro:cloud` (a kimi bíró státusz törölve 2026-06-07, v1.2.4). Lásd [HuGME](hugme-benchmark.md).
+A hu-eval projekt konkrét sorrendje: `gemini-3-flash-preview:latest` (megszűnt 2026-07-14) > `deepseek-v4-pro:cloud` (jelenlegi hivatalos bíró). A `kimi-k2.6:cloud` bíró státusza törölve 2026-06-07, v1.2.4 (CSAK benchmark modell). Lásd [HuGME](hugme-benchmark.md).
+
+> **Self-bias korlát (SZENT):** a mindenkori bíró modell nem értékelheti saját magát. A `deepseek-v4-pro:cloud` bíróként is szerepel a benchmark poolban, ezért a saját HuGME/MT-Bench-HU eredményeit nem szabad saját magával pontozni — ezeket független bíróval vagy a self-bias szabály szerinti kivételzéssel kell kezelni.
 
 ## Inter-rater reliability: Cohen-féle κ
 
@@ -165,10 +167,10 @@ Indoklás: <1-3 mondat magyarul>
 
 | Feladat | Ajánlott bíró | Megjegyzés |
 |---------|---------------|------------|
-| Egyszerű single-turn pontozás (HuGME) | `gemini-3-flash-preview:latest` | Erős, konzervatív; a kimi bíró státusz törölve 2026-06-07 (v1.2.4) |
-| Multi-turn, GSB pairwise (MT-Bench-HU) | `deepseek-v4-pro:cloud` | Olcsóbb, elég a 6-8 modell összehasonlításhoz |
-| Kulturális, szabad kérdés (Szabad-Kérdés-HU) | `gemini-3-flash-preview:latest` | Magyar specifikum, κ-validációval; a kimi bíró státusz törölve 2026-06-07 (v1.2.4) |
-| Gyors smoke-test (ciklus elején) | `gemini-3-flash-preview:latest` | Olcsó, „durva" szűrő |
+| Egyszerű single-turn pontozás (HuGME) | `deepseek-v4-pro:cloud` | Erős, konzervatív; a gemini-3-flash-preview 2026-07-14-én megszűnt, helyette ez a hivatalos bíró |
+| Multi-turn, GSB pairwise (MT-Bench-HU) | `deepseek-v4-pro:cloud` | Eredetileg is ezt javasoltuk MT-Bench-HU-hoz; a self-bias miatt a saját sorait nem pontozza |
+| Kulturális, szabad kérdés (Szabad-Kérdés-HU) | `deepseek-v4-pro:cloud` | Magyar specifikum, κ-validációval; a gemini-3-flash-preview megszűnt |
+| Gyors smoke-test (ciklus elején) | `deepseek-v4-pro:cloud` | Olcsó, „durva" szűrő |
 | Végső riport-validáció (emberi review) | emberi szakértő | Minimum 2 emberi pontozó, κ-számítás |
 
 ## Limitációk és nyílt kérdések

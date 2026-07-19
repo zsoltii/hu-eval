@@ -174,7 +174,7 @@ Válasz (lépésről lépésre, végén a számmal):
 
 ### 5. HuGME (Hungarian Generative Model Evaluation)
 
-**Mit mér:** a modell generatív képességét magyar nyelven — a modell szöveget generál, és egy **LLM-as-a-Judge** modell (jelenleg `gemini-3-flash-preview`) pontozza 1-5 skálán. A HuGME a magyar nyelvű szabad generálás minőségét méri.
+**Mit mér:** a modell generatív képességét magyar nyelven — a modell szöveget generál, és egy **LLM-as-a-Judge** modell (jelenleg `deepseek-v4-pro:cloud`, hivatalos bíró 2026-07-19 óta; a `gemini-3-flash-preview` megszűnt 2026-07-14) pontozza 1-5 skálán. A HuGME a magyar nyelvű szabad generálás minőségét méri. A bíró modell self-bias elv miatt nem értékelheti saját magát.
 
 **Forrás:** a projekt saját, kézzel összeállított 300 kérdésből áll (magyar nyelvű, különböző témák: kreativitás, összefoglalás, fordítás, stb.). A promptok magyar nyelvűek, és a modell 1-3 bekezdéses választ generál.
 
@@ -187,7 +187,7 @@ Válasz (lépésről lépésre, végén a számmal):
 **Pipeline:**
 1. `scripts/download_hugme.py` (tervezett) — a 300 kézzel összeállított promptot JSONL-be írja
 2. `scripts/run_hugme.py` (tervezett) — a modellnek küldi a promptokat, és a válaszokat elmenti
-3. `scripts/judge_score.py` (tervezett) — a bíró modell (`gemini-3-flash-preview`) pontozza a válaszokat 1-5 skálán
+3. `scripts/judge_score.py` (tervezett) — a bíró modell (`deepseek-v4-pro:cloud`) pontozza a válaszokat 1-5 skálán
 4. Aggregátor — átlagos score modellenként, és a bíró modell konzisztenciája (Cohen-κ)
 
 **Bíró prompt formátum:**
@@ -207,7 +207,7 @@ Csak egy számot adj válaszul.
 
 **Kiértékelés:** átlagos bíró score (1-5). A bíró modell pontosságát emberi spot-check-kel validáljuk (Cohen-κ a magyar referenciákon ~0.71).
 
-**Implementációs státusz:** ✅ `run_hugme.py` + `judge_hugme.py`. 300 prompt (6 metrika × 50). A bíró `gemini-3-flash-preview`. Nincs DeepEval wrapper — a judge_hugme.py saját promptokkal hívja az LLM-et. `judge.overall` = 6 metrika átlaga (0-1).
+**Implementációs státusz:** ✅ `run_hugme.py` + `judge_hugme.py`. 300 prompt (6 metrika × 50). A bíró `deepseek-v4-pro:cloud` (hivatalos bíró 2026-07-19 óta; a `gemini-3-flash-preview` megszűnt 2026-07-14). Nincs DeepEval wrapper — a judge_hugme.py saját promptokkal hívja az LLM-et. `judge.overall` = 6 metrika átlaga (0-1). A self-bias elv miatt a bíró nem értékelheti saját magát.
 
 ---
 
@@ -225,7 +225,7 @@ Csak egy számot adj válaszul.
 **Pipeline:**
 1. `scripts/download_mt_bench_hu.py` (tervezett) — a 80 kérdést JSONL-be írja
 2. `scripts/run_mt_bench_hu.py` (tervezett) — a modellnek küldi a kérdéseket (2 forduló), és a válaszokat elmenti
-3. `scripts/judge_mt_bench.py` (tervezett) — a bíró modell (`gemini-3-flash-preview`) GSB-t ad minden modellpárra
+3. `scripts/judge_mt_bench.py` (tervezett) — a bíró modell (`deepseek-v4-pro:cloud`) GSB-t ad minden modellpárra
 4. Aggregátor — win rate modellenként, kategóriánkénti bontás
 
 **Bíró prompt formátum** (GSB):

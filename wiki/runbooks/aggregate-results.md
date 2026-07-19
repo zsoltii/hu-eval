@@ -8,7 +8,7 @@
 ---
 
 > **v1.1 (2026-07-15) változtatások:**
-> - **Bíró modell**: `gemini-3-flash-preview:latest` — 2026-07-14. 09:00 CEST óta nem elérhető. A HuGME és MT-Bench-HU eredmények reprodukálásához új bíró modell (pl. `gemini-3-pro-preview`) szükséges.
+> - **Bíró modell**: `deepseek-v4-pro:cloud` (hivatalos bíró 2026-07-19 óta) — a `gemini-3-flash-preview:latest` 2026-07-14. 09:00 CEST óta nem elérhető. A HuGME és MT-Bench-HU eredményeket ezzel a bíróval kell újrapontoszni. **Self-bias korlát (SZENT):** a bíró modell nem értékelheti saját magát.
 > - **A `results/` mappából most 5 benchmark** fut ténylegesen (korábban 9 volt tervben): HuLU, MMLU-HU, HuGME, MT-Bench-HU, UD Hungarian. A többi (arc_hu, gsm8k_hu, morphology, perplexity) jövőbeli.
 > - **MT-Bench-HU multi-baseline**: 3 baseline (deepseek-v4-flash/pro, kimi-k2.6) GSB átlaga. Eredmény: 50% (W0/L0/T24) minden modellnél — a baseline-ok túl hasonlóak.
 > - **UD Hungarian refuttatás**: 2026-07-13/14, 13 modell CoT-aware parser-rel. A think modellek jellemzően CoT-t írnak CoNLL-U helyett, így a parser csak a válasz végén keres → 0-7.5% score.
@@ -41,7 +41,7 @@ results/
 │   └── (a többi benchmark state.json "failed_stopped", summary nincs)
 ```
 
-Minden `*_summary.json` legalább egy `accuracy` (0-1) vagy `score` (0-1) mezőt tartalmaz. A judge-olt fájlokban (HuGME) a `num_judged` mező jelzi, hány itemet bírált el a `gemini-3-flash-preview` (vagy új bíró modell). A `mt_bench_hu` summary `wins/losses/ties` mezőket is tartalmazza a multi-baseline GSB-hez.
+Minden `*_summary.json` legalább egy `accuracy` (0-1) vagy `score` (0-1) mezőt tartalmaz. A judge-olt fájlokban (HuGME) a `num_judged` mező jelzi, hány itemet bírált el a `deepseek-v4-pro:cloud` (jelenlegi hivatalos bíró, 2026-07-19 óta; korábban `gemini-3-flash-preview`, megszűnt 2026-07-14). A `mt_bench_hu` summary `wins/losses/ties` mezőket is tartalmazza a multi-baseline GSB-hez.
 
 ## Előfeltételek
 
@@ -389,7 +389,7 @@ Minden cellában a `%` érték is látható. A sorok composite score szerint van
 | `Invalid DISPLAY variable` (Linux szerver) | Matplotlib X szervert keres | A script elején `matplotlib.use("Agg")` — benne van |
 | Composite 1 soros, nem informatív | Csak 1 modell van | Futtass még 1-2 modellt ([Runbook: HuLU](run-hulu-modell-x.md)) |
 | **qwen3-next:80b composite 60% felett** | Csak HuLU van neki (0.615 / 0.632), a többi RETIRED → a képlet újraosztja a súlyokat | A RETIRED modellek `composite_score` mezőjét `NaN`-ra kell állítani (a script v1.1-ben benne van) |
-| **gemini-3-flash-preview bíró nem elérhető** | A bíró modell 2026-07-14. 09:00 CEST óta megszűnt | Új bíró modell (gemini-3-pro-preview) — a HuGME és MT-Bench-HU rejudge szükséges |
+| **gemini-3-flash-preview bíró nem elérhető** | A bíró modell 2026-07-14. 09:00 CEST óta megszűnt | Új bíró modell: `deepseek-v4-pro:cloud` (2026-07-19 óta hivatalos bíró) — a HuGME és MT-Bench-HU rejudge szükséges; self-bias miatt a deepseek saját sorait független bíróval kell pontozni |
 | **gpt-oss:20b HuGME 138 ó outlier** | Cloud rate limit, a JSONL csak 117 itemet tartalmaz | A `num_judged` mezőt ellenőrizd a summary-ban; ha <300, akkor a score alulbecsült lehet |
 
 ## Haladó tippek
@@ -399,7 +399,7 @@ Minden cellában a `%` érték is látható. A sorok composite score szerint van
 - **Hiányzó dimenziók** — a `composite()` függvény a rendelkezésre álló dimenziókra súlyarányosan újraoszt. Ha egy modellből teljes dimenzió hiányzik, a composite a maradékkal számol. **Kivétel: RETIRED modellek** — ezek composite_score = NaN, mert a HuLU önmagában nem reprezentatív.
 - **Részleges futások** — ha egy modell futása checkpoint miatt megszakadt, a riport tetején `⚠️ Részleges eredmények` figyelmeztetés jelenik meg, és a composite score `[RÉSZLEGES]` jelölést kap. A folytatáshoz használd a benchmark script `--resume` (vagy sima újrafuttatás) kapcsolóját.
 - **Két heatmap** — a stat és gen/ling szétválasztás azért hasznos, mert a HuGME (8-10%) és MT-Bench (50%) más skálán mozognak, mint a statisztikai benchmarkok (46-93%). Egy heatmap-en a stat dominálna, a generatív részletek elvesznének.
-- **Új bíró modell** — ha a `gemini-3-flash-preview` helyett `gemini-3-pro-preview`-t vagy más bíró modellt használsz, a `scripts/judge_hugme.py:27-36` és `scripts/judge_mt_bench.py:23-39` `JUDGE_MODEL` konstansát kell frissíteni, majd újrafuttatni a `rejudge_hugme.py` és `rejudge_mt_bench.py` scripteket.
+- **Új bíró modell** — ha a `gemini-3-flash-preview` helyett `deepseek-v4-pro:cloud`-t vagy más bíró modellt használsz, a `scripts/judge_hugme.py:23` és `scripts/judge_mt_bench.py:23` `JUDGE_MODEL` konstansát kell frissíteni, majd újrafuttatni a `rejudge_hugme.py` és `rejudge_mt_bench.py` scripteket. **Figyelem:** a self-bias elv miatt a bíró modell saját HuGME/MT-Bench sorait nem szabad saját magával pontozni.
 
 ## Ellenőrző lista
 

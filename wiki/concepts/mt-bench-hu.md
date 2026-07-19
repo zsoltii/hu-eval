@@ -190,7 +190,7 @@ def median(lista: List[Union[int, float]]) -> float:
 ## Limitációk
 
 - **Magyar specifikus kategóriák (Irony, Formal Letter, History)** nehezebben skálázódnak, mint az általános kategóriák — magas az emberi spot-check szükséglet.
-- **Bíró költség:** a 80 prompt × 2 forduló × bíró = 160 bíró hívás modellenként, ami `gemini-3-flash-preview:latest` mellett is lassú (~30-45 perc).
+- **Bíró költség:** a 80 prompt × 2 forduló × bíró = 160 bíró hívás modellenként, ami `deepseek-v4-pro:cloud` (jelenlegi hivatalos bíró, 2026-07-19 óta) mellett is lassú (~30-45 perc). A `gemini-3-flash-preview:latest` megszűnt 2026-07-14.
 - **Párosítás-kombinatorika:** 6 modell pairwise összehasonlítása = 15 pár, ami 1200 bíró hívás. Érdemes először abszolút pontozással szűrni, és csak a top 3-4 modellt pairwise futtatni.
 
 ## Összefüggés

@@ -38,7 +38,7 @@ Az alábbi számok **nagyságrendi becslések**, nem pontos árak. A cél az ös
 | Pro / Flagship | `minimax-m3`, `deepseek-v4-pro` | 2-15 | Legjobb minőség, legdrágább |
 | Flash / Mini | `gemini-3-flash-preview` | 0.1-0.5 | 5-10x olcsóbb, kisebb minőségveszteség |
 | Ultra-large | `qwen3.5:cloud` | 5-30 | Csak nagyon nehéz feladatra éri meg |
-| Bírószintű | `gemini-3-flash-preview:latest` (bíró) | 1-5 | LLM-as-a-Judge hívásokra |
+| Bírószintű | `deepseek-v4-pro:cloud` (hivatalos bíró 2026-07-19 óta) | 1-5 | LLM-as-a-Judge hívásokra; a `gemini-3-flash-preview:latest` megszűnt 2026-07-14 |
 
 ### Lokális költségek
 
@@ -186,8 +186,8 @@ A projekt kontextusában (értékelés, riportkészítés):
 
 - **Alapértelmezett versenyző modellek** — `minimax-m3:cloud` (kiindulási pont)
 - **Lokális baseline** — `qwen3.5:4b` (a legjobb ár/teljesítmény arány lokálisan)
-- **Bíró modell — `gemini-3-flash-preview:latest` (a kimi bíró státusza törölve 2026-06-07, v1.2.4)
-- **Gyors smoke test** — `gemini-3-flash-preview` (olcsó, gyors, "elég jó")
+- **Bíró modell — `deepseek-v4-pro:cloud` (hivatalos bíró 2026-07-19 óta; a `gemini-3-flash-preview:latest` megszűnt 2026-07-14, a kimi bíró státusza törölve 2026-06-07, v1.2.4)
+- **Gyors smoke test** — `deepseek-v4-pro:cloud` (olcsó, gyors, "elég jó"; a gemini-3-flash-preview megszűnt)
 
 ## Kapcsolódó
 

@@ -3,7 +3,7 @@
 *Típus:* entity
 *Forrás(ok):* Google DeepMind hivatalos model card, belső használat
 *Létrehozva:* 2026-06-06
-*Frissítve:* 2026-07-15 (v1.3 — bíró modellként, megszűnt 2026-07-14)
+*Frissítve:* 2026-07-19 (v1.3.3 — bíró modellként megszűnt 2026-07-14, helyette a `deepseek-v4-pro:cloud` a hivatalos bíró)
 
 ---
 
@@ -67,7 +67,7 @@ A projekt eredeti tervében a Gemini 3 Flash a következőkért felelt volna:
 - **Magyar tudás-mérés** — HuLU, MMLU-HU (de ezekhez végül nem ezt használtuk bírónak)
 - **Bíró (LLM-as-a-Judge)** — ténylegesen ezt a szerepet töltötte be a HuGME és MT-Bench-HU kiértékelésében
 
-> 🔴 **Jelenleg:** a modell megszűnt, így a fenti szerepek egyike sem elérhető. Új bíró modell szükséges a generatív benchmarkok rejudge-éhez.
+> 🔴 **Jelenleg:** a modell megszűnt, így a fenti szerepek egyike sem elérhető. Helyette a **`deepseek-v4-pro:cloud`** a hivatalos bíró (2026-07-19 óta) — lásd [LLM-as-a-Judge](../concepts/llm-as-judge.md). A `deepseek-v4-pro` is benchmark-modell, ezért a self-bias elv miatt a saját HuGME/MT-Bench sorait nem pontozhatja saját magával.
 
 ## Ismert gyengeségek (mint bíró)
 
@@ -77,7 +77,7 @@ A projekt eredeti tervében a Gemini 3 Flash a következőkért felelt volna:
 
 ## Összekapcsolások
 
-- [LLM-as-a-Judge](../concepts/llm-as-judge.md) — a bíró keretrendszer (a gemini volt az egyetlen judge)
+- [LLM-as-a-Judge](../concepts/llm-as-judge.md) — a bíró keretrendszer (a gemini megszűnt, helyette deepseek-v4-pro:cloud a hivatalos bíró)
 - [HuGME](../concepts/hugme-benchmark.md) — 6 metrika, gemini bíróval pontozva
 - [MT-Bench-HU](../concepts/mt-bench-hu.md) — GSB pairwise, gemini bíróval
 - [Végleges riport](../reports/report-2026-07-14.md) — a gemini-bíró eredmények (nem reprodukálhatóak)

@@ -72,7 +72,7 @@ A Szabad-Kérdés-HU nem támaszkodik kizárólag LLM-bíróra — a magyar kult
 
 ### 2. lépés: LLM-bíró pontozás (skálázás)
 
-- A bíró (`gemini-3-flash-preview:latest`) ugyanazt a 0-5 skálát használja, ugyanazzal a magyar nyelvű rubric-szel.
+- A bíró (`deepseek-v4-pro:cloud`, hivatalos bíró 2026-07-19 óta; a `gemini-3-flash-preview:latest` megszűnt 2026-07-14) ugyanazt a 0-5 skálát használja, ugyanazzal a magyar nyelvű rubric-szel.
 - A bíró indoklást is ad (mely részt talált helyesnek, melyet tévesnek).
 
 ### 3. lépés: Egyezés-vizsgálat
