@@ -3,13 +3,13 @@
 *Típus:* concept
 *Forrás(ok):* belső projekt-katalógus
 *Létrehozva:* 2026-06-06
-*Frissítve:* 2026-07-19
+*Frissítve:* 2026-07-25
 
 ---
 
 *Tartalomkatalógus. Frissül, ahogy új oldalak jönnek létre.*
 
-*Utolsó frissítés:* 2026-07-19 (v1.3.4 — openai-backend támogatás, lokális Qwen3-Next-80B IQ3_XXS első lokális modell, conda env + requirements.txt rögzítve)
+*Utolsó frissítés:* 2026-07-25 (v1.4 — Qwen3-Next-80B IQ3_XXS nothink benchmark kész, think adatok elvesztek, riport elkészült)
 
 ## ⚙️ Futtatható kód és adatok
 
@@ -140,4 +140,4 @@ A teljes projekt-struktúra (scriptek, adatok, eredmények, state) a gyökér [`
 - **Belső linkek:** minden wiki-oldal legalább 3 másikra hivatkozik
 - **Nyelv:** magyar (technikai kifejezések angolul)
 - **Módszer:** Karpathy LLM Wiki minta
-- **Állapot (2026-07-19, v1.3.4):** openai-backend támogatás a 4 run scriptben + lokális Qwen3-Next-80B IQ3_XXS referencia; conda env `eval-hu` + `requirements.txt` rögzítve; a teljes benchmark-futtatás és a `report-2026-07-19-lokális-qwen3-next.md` a felhasználó indítására vár.
+- **Állapot (2026-07-25, v1.4):** lokális Qwen3-Next-80B IQ3_XXS nothink benchmark kész (4/5 benchmark, UD N/A), think adatok elvesztek, `report-2026-07-25-lokalis-qwen3-next.md` elkészült.

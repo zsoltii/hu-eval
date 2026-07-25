@@ -202,7 +202,7 @@ A projekt kontextusában (értékelés, riportkészítés):
   - A llama-server `reasoning_format: none` + `reasoning_in_content: false` → a modell **mindig gondolkodik**. A nothink és think mód érdemben nem tér el; a `num_predict=4096` (nothink) és `num_predict=16384` (think) néha kevés a gondolkodásnak, üres `content` és `finish_reason: length` jellemző tünet.
   - Egyszálú (`total_slots: 1`) — a teljes 5×2 benchmark-szett soros futtatása kötelező, ~60-100 ó becsült idő.
   - 16K context limit — a hosszú MMLU-HU 5-shot promptok néha megközelítik.
-- **Riport:** `wiki/reports/report-2026-07-19-lokális-qwen3-next.md` (a BASELINE riport kiegészítése lokális adattal)
+- **Riport:** `wiki/reports/report-2026-07-25-lokalis-qwen3-next.md` (a BASELINE riport kiegészítése lokális adattal)
 - **OpenAI-backend konvenció:** lásd [Concept: OpenAI-kompatibilis backend](../concepts/openai-backend-support.md) és a [riport-template Modell-kvantálás + Backend oszlop](riport-template.md#modell-kvantálás)
 
 Ez az első alkalom, hogy a projekt **lokális modellt** is felvett a modell-poolba. A korábbi BASELINE riport (2026-07-14) kizárólag `ollama-cloud` (`:cloud` végződésű) modelleket tartalmazott — a mostani riport ezt egészíti ki egy lokális referenciával, a cloud/lokális összehasonlíthatóság első mérőszámaként.
