@@ -81,7 +81,7 @@ A teljes projekt-struktúra (scriptek, adatok, eredmények, state) a gyökér [`
 - [GPT-OSS 120B (Cloud)](entities/gpt-oss-120b.md) — 120B, think/nothink azonos
 - [GPT-OSS 20B (Cloud)](entities/gpt-oss-20b.md) — leggyengőbb aktív (MMLU 46%)
 - [Qwen3-Next 80B (Cloud)](entities/qwen3-next-80b.md) — ⚠️ RETIRED 2026-06-16 (HTTP 410)
-- [Qwen3-Next 80B Thinking GGUF (lokális)](entities/qwen3-next-80b-lokalis.md) — **új lokális referencia** (v1.3.4, 2026-07-19), IQ3_XXS, llama-server `localhost:8080/v1`; az egyetlen lokális benchmark-modell a modell-poolban
+- [Qwen3-Next 80B Thinking GGUF (lokális)](entities/qwen3-next-80b-lokalis.md) — **lokális referencia** (v1.4, 2026-07-25), IQ3_XXS, llama-server `localhost:8080/v1`; csak think módban fut (nincs nothink); az egyetlen lokális benchmark-modell a modell-poolban
 
 ### Datasetek (5 db)
 
@@ -140,4 +140,4 @@ A teljes projekt-struktúra (scriptek, adatok, eredmények, state) a gyökér [`
 - **Belső linkek:** minden wiki-oldal legalább 3 másikra hivatkozik
 - **Nyelv:** magyar (technikai kifejezések angolul)
 - **Módszer:** Karpathy LLM Wiki minta
-- **Állapot (2026-07-25, v1.4):** lokális Qwen3-Next-80B IQ3_XXS nothink benchmark kész (4/5 benchmark, UD N/A), think adatok elvesztek, `report-2026-07-25-lokalis-qwen3-next.md` elkészült.
+- **Állapot (2026-07-25, v1.4):** lokális Qwen3-Next-80B IQ3_XXS think benchmark kész (4/5 benchmark, UD N/A 16K-n, 64K-on már megy), a modellnek nincs nothink módja, `report-2026-07-25-lokalis-qwen3-next.md` elkészült.

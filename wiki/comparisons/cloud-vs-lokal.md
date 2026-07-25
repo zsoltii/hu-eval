@@ -198,11 +198,12 @@ A projekt kontextusában (értékelés, riportkészítés):
 - **Backend:** lokális **llama-server** `http://localhost:8080/v1` (OpenAI-kompatibilis), 1 slot
 - **Context:** 16K (a modell tanítva 256K-ra)
 - **KVANTÁLÁS:** IQ3_XXS — `ollama-cloud` érték **nem** alkalmazható, a riportban `IQ3_XXS - 3.0625 bpw, GGUF, 32.95 GB` szerepel; a **Backend** oszlopban `openai`
+- **Mód:** a modell **csak think módban fut** — a llama-server `reasoning_format: none` nem kapcsolja ki a CoT-t; az `--mode nothink` flag hatástalan. Nincs külön nothink mód. A korábban "nothink"-ként jelölt eredmények valójában think eredmények.
 - **Limitációk:**
-  - A llama-server `reasoning_format: none` + `reasoning_in_content: false` → a modell **mindig gondolkodik**. A nothink és think mód érdemben nem tér el; a `num_predict=4096` (nothink) és `num_predict=16384` (think) néha kevés a gondolkodásnak, üres `content` és `finish_reason: length` jellemző tünet.
+  - A llama-server `reasoning_format: none` + `reasoning_in_content: false` → a modell **mindig gondolkodik**. Nincs nothink mód. A `num_predict=4096` néha kevés a gondolkodásnak, üres `content` és `finish_reason: length` jellemző tünet.
   - Egyszálú (`total_slots: 1`) — a teljes 5×2 benchmark-szett soros futtatása kötelező, ~60-100 ó becsült idő.
-  - 16K context limit — a hosszú MMLU-HU 5-shot promptok néha megközelítik.
-- **Riport:** `wiki/reports/report-2026-07-25-lokalis-qwen3-next.md` (a BASELINE riport kiegészítése lokális adattal)
+  - 16K context limit (2026-07-25-én 64K-ra emelve) — a hosszú MMLU-HU 5-shot promptok néha megközelítik.
+- **Riport:** `wiki/reports/report-2026-07-25-lokalis-qwen3-next.md` (a BASELINE riport kiegészítése lokális adattal; a modell csak think módban fut, nincs nothink)
 - **OpenAI-backend konvenció:** lásd [Concept: OpenAI-kompatibilis backend](../concepts/openai-backend-support.md) és a [riport-template Modell-kvantálás + Backend oszlop](riport-template.md#modell-kvantálás)
 
 Ez az első alkalom, hogy a projekt **lokális modellt** is felvett a modell-poolba. A korábbi BASELINE riport (2026-07-14) kizárólag `ollama-cloud` (`:cloud` végződésű) modelleket tartalmazott — a mostani riport ezt egészíti ki egy lokális referenciával, a cloud/lokális összehasonlíthatóság első mérőszámaként.

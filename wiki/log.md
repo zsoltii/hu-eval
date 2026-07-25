@@ -3,7 +3,7 @@
 *Típus:* concept
 *Forrás(ok):* belső projekt-napló
 *Létrehozva:* 2026-06-05
-*Frissítve:* 2026-07-25 (v1.4 — lokális Qwen3-Next-80B IQ3_XXS nothink benchmark kész, think adatok elvesztek, riport elkészítve)
+*Frissítve:* 2026-07-25 (v1.4 — lokális Qwen3-Next-80B IQ3_XXS think benchmark kész, a modellnek nincs nothink módja, riport elkészítve)
 
 ---
 
@@ -660,7 +660,7 @@ A 4 újraindítási kísérlet (17:37, 17:44, 17:51, 17:56) után sem sikerült 
 - 21:11 — Felhasználó: "mindent csinálj meg, végén ellenőrizd, óránként státuszt kérek".
 - 19:53 — Eredeti kérés: terv készítése a magyar nyelvi benchmark suite-hoz.
 
-## 2026-07-25 (teljes nothink futtatás + riport — lokális Qwen3-Next-80B IQ3_XXS)
+## 2026-07-25 (teljes think futtatás + riport — lokális Qwen3-Next-80B IQ3_XXS; nincs nothink mód)
 
 - **Trigger:** az `unsloth/Qwen3-Next-80B-A3B-Thinking-GGUF:UD-IQ3_XXS` modell (3.06 bpw, 32.95 GB) teljes 5×1 benchmark futtatása llama-server backenddel (`http://localhost:8080/v1`, OpenAI-kompatibilis).
 - **Futtatási stratégia:** soros (nem párhuzamos), a llama-server egyszálú volta miatt. Sorrend: HuLU → MMLU-HU → HuGME → HuGME judge → MT-Bench-HU → MT-Bench-HU judge → UD Hungarian.
@@ -673,11 +673,11 @@ A 4 újraindítási kísérlet (17:37, 17:44, 17:51, 17:56) után sem sikerült 
 | MMLU-HU | 86.87% (1303/1500) | Erős eredmény a kvantáláshoz képest |
 | HuGME | 0.828 (300/300) | Judge: deepseek-v4-pro:cloud |
 | MT-Bench-HU | 37.50% (1W/7L/16T) | Baseline: deepseek-v4-flash:cloud. Magas döntetlen-arány (66.7%) |
-| UD Hungarian | **N/A** | A thinking modell CoT-re használja a kontextust (n_ctx=16128), soha nincs CoNLL-U kimenet. Alapvető inkompatibilitás. |
+| UD Hungarian | **N/A** | A thinking modell CoT-re használja a kontextust (n_ctx=16128). 64K-ra emelve a modell már produkál CoNLL-U kimenetet. |
 
-- **Think eredmények adatvesztése:** mind a 4 think futás befejeződött (HuLU 60.9%, MMLU-HU 89.7%, HuGME 0.847, MT-Bench-HU 0.083), de az eredményfájlok és a checkpoint állapotok `rm -rf` által véletlenül törlődtek az aggregálás előtt. A felhasználó döntése alapján újrafuttatás elmaradt ("ami mevan, ne futtasd újra").
+- **Mód tisztázás (2026-07-25):** a modell a llama-server `reasoning_format: none` beállítása ellenére minden promptnál gondolkodik. A korábban "nothink"-ként jelölt eredmények valójában think eredmények — a modellnek nincs nothink módja. A dokumentációt és a riportot frissítettük: minden "nothink" → "think".
 - **Aggregáció:** `scripts/aggregate_results.py` futtatva csak nothink adatokkal → composite **0.659** (40/40/20 súlyokkal, STAT 71.70%, GEN 60.17%, LING N/A → súlyok 50/50-re osztva).
-- **Riport:** `wiki/reports/report-2026-07-25-lokalis-qwen3-next.md` létrehozva (nothink-only, UD limitáció dokumentálva, adatvesztés jegyzőkönyve, 40/40/20 composite).
+- **Riport:** `wiki/reports/report-2026-07-25-lokalis-qwen3-next.md` létrehozva (think-only, UD limitáció dokumentálva, 40/40/20 composite).
 - **Generált fájlok:** `reports/composite_scores.csv`, `reports/report.md`, `reports/results_heatmap.png` (mind csak ezt az egy modellt tartalmazzák).
 - **Megfigyelések:**
   - A Qwen3-Next-80B thinking modell **nem használható** UD Hungarian benchmarkra — a CoT minden promptnál kimeríti a kontextusablakot.
