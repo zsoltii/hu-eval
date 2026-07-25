@@ -18,6 +18,10 @@
 > - 95% CI és "Bíró megbízhatóság másik bíróval" törölve (nincs bootstrap, nincs második bíró)
 > - Két heatmap szekció (stat + gen/ling) hozzáadva
 > - HuLU dedup, MMLU parser javítás, UD refuttatás, bíró modell megszűnés lábjegyzet
+>
+> **v1.1.1 (2026-07-19) kiegészítések:**
+> - **Backend** oszlop a Modell-kvantálás táblában — kötelező (lásd AGENTS.md "Backend konvenció KÖTELEZŐ a riportban"). Értékei: `ollama` (helyi Ollama natív), `ollama-cloud` (Ollama Cloud), `openai` (OpenAI-kompatibilis végpont — llama-server, vLLM, felhő OpenAI API)
+> - OpenAI-kompatibilis backend limitációk szekció — `reasoning_format: none` → mindig gondolkodik, a nothink/think mód érdemben nem tér el (különösen llama-server + Thinking modell esetén)
 
 ## Fejléc
 
@@ -33,15 +37,22 @@
 
 ### Modell-kvantálás
 
-_KÖTELEZŐ szakasz: minden modell kvantálási szintje itt szerepel. Ha a modell Ollama Cloud alatt fut (a lokális kvantálás nem ismert), akkor `ollama-cloud` az érték — nem hagyható üresen. Új modell futtatása előtt mindig rá kell kérdezni a kvantálásra (q4_K_M, fp16, awq, stb.)._
+_KÖTELEZŐ szakasz: minden modell kvantálási szintje és backendje itt szerepel. Ha a modell Ollama Cloud alatt fut (a lokális kvantálás nem ismert), akkor `ollama-cloud` az érték — nem hagyható üresen. Új modell futtatása előtt mindig rá kell kérdezni a kvantálásra (q4_K_M, fp16, awq, stb.) és a backendre (`ollama` natív / `ollama-cloud` / `openai` OpenAI-kompatibilis)._
 
 _Ha egy modellt több kvantálással is futtatunk, minden (modell × kvantálás) kombináció **külön sor** — pl. `qwen3.5:4b` q4_K_M és fp16 külön sorok._
 
-| Modell | Kvantálás |
-|--------|-----------|
-| `<modell1>` | `<q4_K_M / fp16 / awq / ollama-cloud>` |
-| `<modell1>-<kvant2>` | `<q4_K_M / fp16 / awq / ollama-cloud>` |
-| `<modell2>` | `<q4_K_M / fp16 / awq / ollama-cloud>` |
+| Modell | Kvantálás | Backend |
+|--------|-----------|---------|
+| `<modell1>` | `<q4_K_M / fp16 / awq / ollama-cloud>` | `ollama` / `ollama-cloud` / `openai` |
+| `<modell1>-<kvant2>` | `<q4_K_M / fp16 / awq / ollama-cloud>` | `ollama` / `ollama-cloud` / `openai` |
+| `<modell2>` | `<q4_K_M / fp16 / awq / ollama-cloud>` | `ollama` / `ollama-cloud` / `openai` |
+
+> A **Backend** oszlop jelzi, hogy a modell melyik végponton futott:
+> - `ollama` — helyi Ollama szerver `/api/generate` (alapértelmezett)
+> - `ollama-cloud` — Ollama Cloud API (`:cloud` végződésű modell nevek)
+> - `openai` — OpenAI-kompatibilis `/v1/chat/completions` (helyi Ollama `/v1`, llama-server, vLLM, TGI, felhő OpenAI API)
+>
+> Az érték a `results/<model_safe>-<mode>/<bench>_results.jsonl` `"backend"` mezőjéből származik, és a konvenció szerint **kötelező** minden modellnél kitölteni (AGENTS.md "Backend konvenció").
 
 
 ### Időkeret
@@ -232,6 +243,8 @@ A vizuális áttekintéshez **két heatmap** készül (matplotlib, RdYlGn színs
 - _pl. A bíró modell (deepseek-v4-pro:cloud) is egy benchmark-modell, ezért a saját sorait független bíróval kell pontozni (self-bias)_
 - _pl. A CoT-strip parser a CoNLL-U-t a válasz végén keresi, de a modellek középre is tehetik_
 - _pl. A lokális mérések nem készültek el (RTX 4090 benchmark tervben)_
+- _pl. OpenAI-kompatibilis backend (llama-server) + Thinking modell: a `reasoning_format: none` és a `chat_template` miatt a modell **mindig gondolkodik**, a nothink és think mód érdemben nem tér el. A `num_predict=4096` (nothink) néha kevés a gondolkodásnak — üres `content` és `finish_reason: length` jelzi._
+- _pl. Az OpenAI backendű futtatás `n_ctx` korlátja (pl. llama-server 16K)限制ozhatja a hosszú 5-shot MMLU-HU promptokat._
 
 ## Következő lépések
 
@@ -287,6 +300,8 @@ A mérések reprodukálásához szükséges:
 - [Modell vs. Modell](../comparisons/modell-vs-modell.md) — páronkénti összehasonlítás
 - [Benchmark vs. Benchmark](../comparisons/benchmark-vs-benchmark.md) — mit mér melyik benchmark
 - [Cloud vs. Lokális](../comparisons/cloud-vs-lokal.md) — üzemeltetési kontextus
-- [Overview](../overview.md) — projekt cél és hatókör
+- [Concept: OpenAI-kompatibilis backend](../concepts/openai-backend-support.md) — `ollama` vs `openai` backend részletek
+- [Runbook: Benchmark futtatás OpenAI backenden](../runbooks/run-modell-x-openai-backend.md) — llama-server / vLLM / felhő OpenAI esetén
+- [Overview](../overview.md) — projekt cél, hatókör
 - [SCHEMA](../SCHEMA.md) — formátum
-- [AGENTS.md](../../AGENTS.md) — 40/40/20 súlyozás szabálya (kötelező, nem változtatható)
+- [AGENTS.md](../../AGENTS.md) — 40/40/20 súlyozás szabálya (kötelező, nem változtatható); Backend konvenció (kötelező a riportban)

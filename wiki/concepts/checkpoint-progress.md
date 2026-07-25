@@ -1,11 +1,13 @@
 # Checkpoint és folytatható futtatás
 
 *Típus:* concept
-*Forrás(ok):* [Ollama API rate-limit megoldások](https://github.com/ollama/ollama/blob/main/docs/api.md), checkpoint-pattern (belső döntés)
+*Forrás(ok):* [Ollama API rate-limit megoldások](https://github.com/ollama/ollama/blob/main/docs/api.md), checkpoint-pattern (belső döntés), [OpenAI-kompatibilis backend támogatása](openai-backend-support.md) (2026-07-19)
 *Létrehozva:* 2026-06-06
-*Frissítve:* 2026-06-06
+*Frissítve:* 2026-07-19
 
 ---
+
+> **v1.1 (2026-07-19) kiegészítés:** a `FatalBackendError` immár közös ős a `OllamaFatalError` és az `OpenAIFatalError` között. A checkpoint-rendszer teljesen backend-független: a `state/{model_safe}-{mode}/<bench>.json` és a `results/{model_safe}-{mode}/<bench>_results.jsonl` formátum megegyezik ollama és openai backend esetén. A stop-policy (`NO_RETRY_CODES`, `RETRYABLE_CODES`, timeout, connection error) is közös. A `call_openai_strict` az új `scripts/openai_compat.py:43`-ban van definiálva.
 
 ## Mi ez?
 
@@ -307,6 +309,33 @@ python aggregate_results.py
 # → composite_scores.csv, report.md, heatmap
 ```
 
+### OpenAI-kompatibilis backend (2026-07-19 óta)
+
+A checkpoint-rendszer ugyanúgy működik, csak a hívás megy más végpontra:
+
+```bash
+# 1. Első indítás (llama-server, lokális)
+python scripts/run_hulu.py \
+  --model unsloth/Qwen3-Next-80B-A3B-Thinking-GGUF:UD-IQ3_XXS \
+  --mode nothink --backend openai --base-url http://localhost:8080/v1
+# ... 4 óra múlva leállt (timeout) ...
+# ⛔ STOP: openai_timeout (max retries reached)
+#    Kész: 891/2581. Folytatás: python scripts/run_hulu.py --model unsloth/... --backend openai ...
+
+# 2. Folytatás (a state-ből tölti vissza, ugyanaz a parancs)
+python scripts/run_hulu.py \
+  --model unsloth/Qwen3-Next-80B-A3B-Thinking-GGUF:UD-IQ3_XXS \
+  --mode nothink --backend openai --base-url http://localhost:8080/v1
+# 🚀 Folytatás: state betöltve, current_index=891
+# ... 6 óra múlva kész ...
+
+# 3. Aggregáció
+python scripts/aggregate_results.py
+# → a JSONL `backend: openai` mezővel megjelenik a riportban
+```
+
+A `state/`, `results/`, `logs/` mappa-struktúra és a JSON formátum **azonos** mindkét backend esetén. A `"backend"` mező a JSONL-ben jelzi, hogy a sor melyik végpontról származik (a riport kötelező eleme, lásd [riport-template Modell-kvantálás](riport-template.md#modell-kvantálás) és AGENTS.md "Backend konvenció").
+
 ## Edge case-ek
 
 - **Több script párhuzamosan ugyanazon a modellen** — nem támogatott (race condition a state.json-on). A `--lock` opció használható, ha szükséges (flock a state_path-ra).
@@ -317,6 +346,8 @@ python aggregate_results.py
 ## Kapcsolódó
 
 - [Runbook: HuLU futtatása](../runbooks/run-hulu-modell-x.md) — konkrét implementáció
+- [Runbook: Benchmark futtatás OpenAI backenden](../runbooks/run-modell-x-openai-backend.md) — llama-server / vLLM / felhő OpenAI esetén (2026-07-19)
+- [Concept: OpenAI-kompatibilis backend](openai-backend-support.md) — a két backend részletes leírása (2026-07-19)
 - [Runbook: Aggregáció](../runbooks/aggregate-results.md) — részleges JSON-öket is kezel
 - [Runbook: Debug](../runbooks/debug-modell-nem-valaszol.md) — hibaüzenetek értelmezése
 - [Overview](../overview.md) — a 40/40/20 súlyozás

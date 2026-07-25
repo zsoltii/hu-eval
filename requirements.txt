@@ -1,0 +1,33 @@
+# hu-eval benchmark suite — Python függőségek
+#
+# AGENTS.md konvenció: a projekt futtatásához conda env "eval-hu" szükséges
+# Python 3.11-gyel. A deepeval az AGENTS.md-ben említett opcionális
+# függőség — a jelenlegi scriptek (judge_hugme.py, judge_mt_bench.py)
+# saját implementációt használnak, így a deepeval NEM kell a futtatáshoz.
+#
+# Használat:
+#   conda env create -n eval-hu python=3.11 -f requirements.txt
+#   conda activate eval-hu
+#
+# VAGY meglévő env-be:
+#   pip install -r requirements.txt
+#
+# Mac-en a matplotlib Agg backend-et igényel:
+#   export MPLBACKEND=Agg
+
+# --- Alap (benchmark futtatás + judge) ---
+requests>=2.32
+pandas>=2.0
+matplotlib>=3.7
+numpy>=1.24
+
+# --- Benchmark adatok letöltése (HuggingFace-ről) ---
+datasets>=2.14
+
+# --- Opcionális: deepeval (nem kell, saját judge van) ---
+# deepeval>=0.21
+
+# --- Opcionális: ollama-python kliens (csak ha szükséges; a scriptek
+#    requests-szel közvetlenül hívják a /api/generate és /v1/chat/completions
+#    végpontokat) ---
+# ollama-python>=0.2

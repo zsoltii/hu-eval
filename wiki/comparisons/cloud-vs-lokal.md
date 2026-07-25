@@ -1,15 +1,17 @@
 # Cloud vs. Lokális — Üzemeltetési Tradeoff-k
 
 *Típus:* comparison
-*Forrás(ok):* Ollama dokumentáció, modell árlisták (Q1 2026), háztartási áramköltség HU (~40 HUF/kWh), projekt belső
+*Forrás(ok):* Ollama dokumentáció, modell árlisták (Q1 2026), háztartási áramköltség HU (~40 HUF/kWh), projekt belső, [OpenAI-kompatibilis backend](../concepts/openai-backend-support.md) (2026-07-19)
 *Létrehozva:* 2026-06-06
-*Frissítve:* 2026-06-06
+*Frissítve:* 2026-07-19
 
 ---
 
 ## Cél
 
 Mikor érdemes cloud (zárt API-n elérhető) modellt használni, és mikor lokális (saját gépen futó) modellt? Ez az oldal a költség, latency, privacy és minőség dimenziók mentén segít dönteni — táblázatos és döntési mátrix formátumban.
+
+> **v1.1 (2026-07-19) kiegészítés:** a korábbi "minden modell cloud" megállapítás frissítve — a `unsloth/Qwen3-Next-80B-A3B-Thinking-GGUF:UD-IQ3_XXS` (lásd lent) az első lokális benchmark-modell. Az OpenAI-kompatibilis backend (`--backend openai --base-url http://localhost:8080/v1`) 2026-07-19 óta minden run scriptből elérhető.
 
 ## A két üzemeltetési mód
 
@@ -189,9 +191,28 @@ A projekt kontextusában (értékelés, riportkészítés):
 - **Bíró modell — `deepseek-v4-pro:cloud` (hivatalos bíró 2026-07-19 óta; a `gemini-3-flash-preview:latest` megszűnt 2026-07-14, a kimi bíró státusza törölve 2026-06-07, v1.2.4)
 - **Gyors smoke test** — `deepseek-v4-pro:cloud` (olcsó, gyors, "elég jó"; a gemini-3-flash-preview megszűnt)
 
+### Lokális benchmark-modell (2026-07-19, első a projektben)
+
+- **Modell:** `unsloth/Qwen3-Next-80B-A3B-Thinking-GGUF:UD-IQ3_XXS` (llama.cpp GGUF kvantálás, IQ3_XXS, 3.06 bpw, 32.95 GB)
+- **Architektúra:** Qwen3-Next MoE, 80B összes / 3B aktív paraméter
+- **Backend:** lokális **llama-server** `http://localhost:8080/v1` (OpenAI-kompatibilis), 1 slot
+- **Context:** 16K (a modell tanítva 256K-ra)
+- **KVANTÁLÁS:** IQ3_XXS — `ollama-cloud` érték **nem** alkalmazható, a riportban `IQ3_XXS - 3.0625 bpw, GGUF, 32.95 GB` szerepel; a **Backend** oszlopban `openai`
+- **Limitációk:**
+  - A llama-server `reasoning_format: none` + `reasoning_in_content: false` → a modell **mindig gondolkodik**. A nothink és think mód érdemben nem tér el; a `num_predict=4096` (nothink) és `num_predict=16384` (think) néha kevés a gondolkodásnak, üres `content` és `finish_reason: length` jellemző tünet.
+  - Egyszálú (`total_slots: 1`) — a teljes 5×2 benchmark-szett soros futtatása kötelező, ~60-100 ó becsült idő.
+  - 16K context limit — a hosszú MMLU-HU 5-shot promptok néha megközelítik.
+- **Riport:** `wiki/reports/report-2026-07-19-lokális-qwen3-next.md` (a BASELINE riport kiegészítése lokális adattal)
+- **OpenAI-backend konvenció:** lásd [Concept: OpenAI-kompatibilis backend](../concepts/openai-backend-support.md) és a [riport-template Modell-kvantálás + Backend oszlop](riport-template.md#modell-kvantálás)
+
+Ez az első alkalom, hogy a projekt **lokális modellt** is felvett a modell-poolba. A korábbi BASELINE riport (2026-07-14) kizárólag `ollama-cloud` (`:cloud` végződésű) modelleket tartalmazott — a mostani riport ezt egészíti ki egy lokális referenciával, a cloud/lokális összehasonlíthatóság első mérőszámaként.
+
 ## Kapcsolódó
 
 - [Modell vs. Modell](modell-vs-modell.md) — páronkénti benchmark összehasonlítás
 - [Benchmark vs. Benchmark](benchmark-vs-benchmark.md) — milyen benchmarkot használjunk
+- [Concept: OpenAI-kompatibilis backend](../concepts/openai-backend-support.md) — `ollama` vs `openai` backend részletek
+- [Runbook: Benchmark futtatás OpenAI backenden](../runbooks/run-modell-x-openai-backend.md) — lépésről lépésre
+- [Riport sablon](../reports/riport-template.md) — Modell-kvantálás + Backend oszlop
 - [Overview](../overview.md) — fő modellkészlet és értékelési keretrendszer
 - [SCHEMA](../SCHEMA.md) — formátum

@@ -25,9 +25,12 @@ import requests
 
 sys.path.insert(0, str(Path(__file__).parent))
 from checkpoint import Checkpoint
-from stop_on_error import call_ollama_strict, OllamaFatalError
+from stop_on_error import call_ollama_strict, OllamaFatalError, FatalBackendError
+from openai_compat import call_openai_strict
 
 OLLAMA_URL = "http://localhost:11434"
+DEFAULT_OPENAI_BASE_URL = "http://localhost:11434/v1"
+DEFAULT_OPENAI_API_KEY = "ollama"
 PROMPTS_PATH = Path("./data/hugme/prompts.jsonl")
 DEFAULT_RESULTS_DIR = Path("./results")
 DEFAULT_STATE_DIR = Path("./state")
@@ -35,7 +38,10 @@ LOG_PATH = Path("./logs/hugme_runs.log")
 
 
 def run_benchmark(model: str, limit: int | None, reset: bool,
-                  results_dir: Path, state_dir: Path, mode: str = "nothink") -> int:
+                  results_dir: Path, state_dir: Path, mode: str = "nothink",
+                  backend: str = "ollama",
+                  base_url: str = DEFAULT_OPENAI_BASE_URL,
+                  api_key: str = DEFAULT_OPENAI_API_KEY) -> int:
     if mode not in ("think", "nothink"):
         raise ValueError(f"ismeretlen mode: {mode}")
     think = (mode == "think")
@@ -99,15 +105,26 @@ def run_benchmark(model: str, limit: int | None, reset: bool,
                 if item["id"] in completed_set:
                     continue
                 try:
-                    response = call_ollama_strict(
-                        item["prompt"], model,
-                        think=think,
-                        num_predict=4096,
-                        timeout=(300 if think else 120),
-                        max_retries=(1 if think else 2),
-                    )
+                    if backend == "openai":
+                        response = call_openai_strict(
+                            item["prompt"], model,
+                            think=think,
+                            num_predict=4096,
+                            timeout=(300 if think else 120),
+                            max_retries=(1 if think else 2),
+                            base_url=base_url,
+                            api_key=api_key,
+                        )
+                    else:
+                        response = call_ollama_strict(
+                            item["prompt"], model,
+                            think=think,
+                            num_predict=4096,
+                            timeout=(300 if think else 120),
+                            max_retries=(1 if think else 2),
+                        )
                     raw = response.get("response", "").strip()
-                except OllamaFatalError as e:
+                except FatalBackendError as e:
                     cp.mark_stopped(str(e))
                     elapsed = time.time() - start
                     done = len(cp.state["completed_ids"])
@@ -124,6 +141,7 @@ def run_benchmark(model: str, limit: int | None, reset: bool,
                     "metric": item.get("metric", "general"),
                     "response": raw,
                     "mode": mode,
+                    "backend": backend,
                 }, ensure_ascii=False) + "\n")
                 fout.flush()
                 os.fsync(fout.fileno())
@@ -163,30 +181,50 @@ def main() -> int:
     p.add_argument("--mode", choices=["think", "nothink"], default="nothink")
     p.add_argument("--results-dir", type=Path, default=DEFAULT_RESULTS_DIR)
     p.add_argument("--state-dir", type=Path, default=DEFAULT_STATE_DIR)
+    p.add_argument("--backend", choices=["ollama", "openai"], default="ollama",
+                   help="Inferencia backend: 'ollama' (közvetlen /api/generate) "
+                        "vagy 'openai' (OpenAI-kompatibilis /v1/chat/completions, "
+                        "pl. helyi Ollama /v1, llama-server, stb.)")
+    p.add_argument("--base-url", default=DEFAULT_OPENAI_BASE_URL,
+                   help="OpenAI backend esetén a végpont gyökere "
+                        "(default: http://localhost:11434/v1)")
+    p.add_argument("--api-key", default=DEFAULT_OPENAI_API_KEY,
+                   help="OpenAI backend esetén a Bearer token "
+                        "(Ollama esetén tetszőleges, default: 'ollama')")
     args = p.parse_args()
 
     if args.status:
         show_status(args.model, args.state_dir, args.mode)
         return 0
 
-    try:
-        r = requests.get(f"{OLLAMA_URL}/api/tags", timeout=5)
-        r.raise_for_status()
-        models = [m["name"] for m in r.json().get("models", [])]
-        if args.model not in models and not args.model.endswith(":cloud"):
-            print(f"⚠️  {args.model} nincs telepítve. Futtasd: ollama pull {args.model}")
-            try:
-                ans = input("Folytatod cloud modellként? [y/N] ")
-                if ans.lower() != "y":
+    if args.backend == "ollama":
+        try:
+            r = requests.get(f"{OLLAMA_URL}/api/tags", timeout=5)
+            r.raise_for_status()
+            models = [m["name"] for m in r.json().get("models", [])]
+            if args.model not in models and not args.model.endswith(":cloud"):
+                print(f"⚠️  {args.model} nincs telepítve. Futtasd: ollama pull {args.model}")
+                try:
+                    ans = input("Folytatod cloud modellként? [y/N] ")
+                    if ans.lower() != "y":
+                        return 1
+                except EOFError:
                     return 1
-            except EOFError:
-                return 1
-    except Exception as e:
-        print(f"❌ Ollama nem elérhető: {e}")
-        return 1
+        except Exception as e:
+            print(f"❌ Ollama nem elérhető: {e}")
+            return 1
+    else:
+        try:
+            requests.get(f"{args.base_url.rstrip('/')}/models",
+                         headers={"Authorization": f"Bearer {args.api_key}"},
+                         timeout=5)
+        except Exception as e:
+            print(f"⚠️  OpenAI backend ({args.base_url}) nem érhető el: {e}")
+            print("   A futás így is megkezdődik; az első hiba stop-ol (checkpoint).")
 
     return run_benchmark(args.model, args.limit, args.reset,
-                         args.results_dir, args.state_dir, args.mode)
+                         args.results_dir, args.state_dir, args.mode,
+                         args.backend, args.base_url, args.api_key)
 
 
 if __name__ == "__main__":

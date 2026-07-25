@@ -1,21 +1,28 @@
 # Környezet beállítása (eval-hu conda env)
 
 *Típus:* runbook
-*Forrás(ok):* belső projekt, [Anaconda docs](https://docs.conda.io/), [Ollama Python client](https://github.com/ollama/ollama-python)
+*Forrás(ok):* belső projekt, [Anaconda docs](https://docs.conda.io/), [Ollama Python client](https://github.com/ollama/ollama-python), projekt `requirements.txt` (2026-07-19)
 *Létrehozva:* 2026-06-06
-*Frissítve:* 2026-06-06
+*Frissítve:* 2026-07-19
 
 ---
 
 ## Cél
 
-Létrehozni egy reprodukálható, izolált Python környezetet a magyar LLM értékelési projekthez (`eval-hu` conda env), amiben minden benchmark script, judge hívás és aggregáció fut. A env-nek tartalmaznia kell a `requests`, `pandas`, `matplotlib`, `deepeval` és `ollama` csomagokat.
+Létrehozni egy reprodukálható, izolált Python környezetet a magyar LLM értékelési projekthez (`eval-hu` conda env), amiben minden benchmark script, judge hívás és aggregáció fut. A futtatáshoz szükséges csomagok a projekt gyökerében lévő `requirements.txt`-ben vannak deklarálva (2026-07-19 óta).
+
+> **v1.3.4 (2026-07-19) változtatások:**
+> - `requirements.txt` fájl a projekt gyökerében — `pip install -r requirements.txt` a kanonikus telepítési mód
+> - A `deepeval` opcionális (a `judge_hugme.py` / `judge_mt_bench.py` saját implementációt használ, `requests`-szel hívja a bírót); a kommentek frissítve
+> - Az `ollama` Python kliens **nem** kell — a scriptek közvetlenül `requests.post`-tal hívják a `/api/generate` (ollama) és `/v1/chat/completions` (openai) végpontokat
+> - Új "A) `requirements.txt` használata (ajánlott)" szakasz — az egylépéses telepítéshez
+> - OpenAI-kompatibilis backend esetén a `2.6. Végpont ellenőrzése` szakasz is bekerült
 
 ## Előfeltételek
 
 - **Anaconda / Miniconda** telepítve (`$HOME/anaconda3/` a default lokáció ezen a gépen)
-- **Ollama szerver** fut a `http://localhost:11434` címen (vagy elérhető hálózaton)
-- **Python 3.11** — a `eval-hu` env ezt a verziót használja (3.12-vel a `deepeval`-nak vannak kompatibilitási gondjai)
+- **Ollama szerver** fut a `http://localhost:11434` címen — VAGY más OpenAI-kompatibilis végpont (llama-server, vLLM, stb.) elérhető
+- **Python 3.11** — a `eval-hu` env ezt a verziót használja
 - **Linux / macOS** — a parancsok mindkettőn működnek, de a `~/.bashrc` vs `~/.zshrc` eltérő lehet
 
 ## Lépések
@@ -36,7 +43,7 @@ conda env list | grep eval-hu
 A kimenetben ezt kell látnod:
 
 ```
-eval-hhu                 $HOME/anaconda3/envs/eval-hu
+eval-hu                  $HOME/anaconda3/envs/eval-hu
 ```
 
 ### 2. Aktiválás
@@ -59,16 +66,41 @@ which pip
 
 ### 3. Csomagok telepítése
 
+#### A) `requirements.txt` használata (ajánlott, 2026-07-19 óta)
+
+A projekt gyökerében lévő `requirements.txt` tartalmazza az összes szükséges függőséget. A conda env aktiválása után:
+
 ```bash
-# Telepítsd az összes szükséges csomag egyetlen pip paranccsal
-# (így a pip egyszerre oldja fel a függőségeket, nem lesz konfliktus)
+# A projekt gyökeréből (ahol a requirements.txt van)
+cd <projekt-gyökere>
+pip install -r requirements.txt
+```
+
+A `requirements.txt` jelenlegi tartalma (a kommenteket leszámítva):
+
+```
+requests>=2.32
+pandas>=2.0
+matplotlib>=3.7
+numpy>=1.24
+datasets>=2.14
+# deepeval>=0.21  # opcionális — a scriptek saját judge implementációt használnak
+# ollama-python>=0.2  # opcionális — a scriptek requests-szel hívnak
+```
+
+> A `datasets` a HuggingFace dataset-ek letöltéséhez kell (`download_hulu.py`, `download_mmlu_hu.py`, `download_ud_hungarian.py`).
+
+#### B) Manuális pip install (ha a `requirements.txt` nem elérhető)
+
+```bash
 pip install \
     requests \
     pandas \
     matplotlib \
-    deepeval \
-    ollama
+    datasets
 ```
+
+A `deepeval` és `ollama` Python kliens **opcionális** — a scriptek nem használják őket. Ha valamelyik importálás mégis szükséges, külön telepíthető.
 
 A telepítés ~2-3 perc. Ha bármelyik csomag `ERROR` hibát dob, ne `pip install --upgrade --force-reinstall`-ozz — olvasd el a hibaüzenetet, és külön telepítsd a problémásat.
 
@@ -76,11 +108,11 @@ A telepítés ~2-3 perc. Ha bármelyik csomag `ERROR` hibát dob, ne `pip instal
 
 ```bash
 # Ha egy csomag a conda repóból is elérhető (pl. pandas),
-#conda úton is telepítheted — DE csak akkor, ha az env aktiválva van
+# conda úton is telepítheted — DE csak akkor, ha az env aktiválva van
 conda install -n eval-hu -y pandas matplotlib requests
 
-# A deepeval és ollama NINCS conda repóban, ezeket mindig pip-pel telepítsd
-pip install deepeval ollama
+# A datasets NINCS conda repóban, mindig pip-pel telepítsd
+pip install datasets
 ```
 
 ### 4. Verifikáció (import check)
@@ -93,11 +125,11 @@ import sys
 
 # Csomagok listája, amit ellenőrzünk
 csomagok = [
-    ("requests", "HTTP kérések (Ollama API, dataset letöltés)"),
+    ("requests", "HTTP kérések (Ollama API, OpenAI API, dataset letöltés)"),
     ("pandas", "JSON eredmények aggregációja"),
     ("matplotlib", "Heatmap és chart generálás"),
-    ("deepeval", "LLM-as-a-Judge keretrendszer"),
-    ("ollama", "Ollama Python kliens"),
+    ("numpy", "aggregátor és heatmap számítások"),
+    ("datasets", "HuggingFace dataset-ek letöltése"),
 ]
 
 print(f"Python: {sys.version}")
@@ -119,13 +151,13 @@ if mind_ok:
     print("🎉 Minden csomag OK, az eval-hu env használatra kész!")
     sys.exit(0)
 else:
-    print("⚠️  Van hiányzó csomag — telepítsd a pip install paranccsal.")
+    print("⚠️  Van hiányzó csomag — telepítsd a pip install -r requirements.txt paranccsal.")
     sys.exit(1)
 ```
 
 ```bash
 # Futtatás
-cd .
+cd <projekt-gyökere>
 python verify_env.py
 ```
 
@@ -135,16 +167,18 @@ Elvárt kimenet (a verziószámok változhatnak):
 Python: 3.11.x (...)
 Interpreter: $HOME/anaconda3/envs/eval-hu/bin/python
 ---
-✅ requests       2.32.x     — HTTP kérések (Ollama API, dataset letöltés)
+✅ requests       2.32.x     — HTTP kérések (Ollama API, OpenAI API, dataset letöltés)
 ✅ pandas         2.2.x      — JSON eredmények aggregációja
 ✅ matplotlib     3.9.x      — Heatmap és chart generálás
-✅ deepeval       1.x.x      — LLM-as-a-Judge keretrendszer
-✅ ollama         0.4.x      — Ollama Python kliens
+✅ numpy          1.26.x     — aggregátor és heatmap számítások
+✅ datasets       2.14.x     — HuggingFace dataset-ek letöltése
 ---
 🎉 Minden csomag OK, az eval-hu env használatra kész!
 ```
 
-### 5. Ollama elérhetőség ellenőrzése
+### 5. Végpont(ok) elérhetősége
+
+#### A) Ollama szerver (alapértelmezett backend)
 
 ```bash
 # curl teszt — a legegyszerűbb módja, hogy kiderítsd, fut-e a szerver
@@ -162,6 +196,24 @@ sudo systemctl start ollama
 ```
 
 Ha `models` listát látsz (pl. `qwen3.5:4b`, `qwen3.5:0.8b`), akkor minden kész.
+
+#### B) OpenAI-kompatibilis végpont (opcionális, 2026-07-19 óta)
+
+Ha llama-server / vLLM / TGI / felhő OpenAI API-t használsz a `--backend openai` kapcsolóval:
+
+```bash
+# llama-server alapértelmezett port
+curl -s http://localhost:8080/v1/models | python -m json.tool | head
+
+# Helyi Ollama /v1 (cloud modellek proxyzva)
+curl -s http://localhost:11434/v1/models | python -m json.tool | head
+
+# Felhő OpenAI API
+curl -s https://api.openai.com/v1/models \
+  -H "Authorization: Bearer $OPENAI_API_KEY" | python -m json.tool | head
+```
+
+A válasz `data[].id` (vagy `models[].name`) mezője a modell pontos neve, amit a `--model` kapcsolónak át kell adni.
 
 ### 6. Datasetek előkészítése (offline másolás)
 
@@ -274,28 +326,24 @@ Vagy állítsd be környezeti változóként:
 echo 'export MPLBACKEND=Agg' >> ~/.bashrc
 ```
 
-### D) `deepeval` telepítés deepeval[api] vs deepeval
+### D) `deepeval` telepítés — mostantól opcionális (2026-07-19)
 
-**Tünet:** A `deepeval` települ, de `from deepeval.metrics import ...` nem működik.
+**Régi konvenció (2026-06-06 – 2026-07-18):** a `pip install deepeval` kötelező volt a LLM-as-a-Judge hívásokhoz.
 
-**Ok:** A `deepeval` több extra opcionális függőséggel rendelkezik.
+**2026-07-19 óta:** a `judge_hugme.py` és a `judge_mt_bench.py` **saját implementációt** használnak — `requests`-szel hívják a bíró modellt, és nincs szükség a `deepeval` Python csomagra. A `requirements.txt` ezért **nem tartalmazza** a `deepeval`-t (kommentben van, opcionális).
 
-**Megoldás:**
+Ha mégis szükséges (pl. külső judge-pool integrációhoz):
 
 ```bash
-# A teljes telepítés, beleértve az LLM judge-ot
-pip install deepeval[all]
-
-# Vagy ha csak az LLM judge kell
+# Csak akkor, ha valamelyik script deepeval-t igényel
 pip install deepeval
-pip install langchain openai  # ha LLM judge-ot használsz
 ```
 
-### E) Linux-on a `libstdc++` hiányzik a deepeval miatt
+### E) Linux-on a `libstdc++` hiányzik — mostantól nem kell (2026-07-19)
 
-**Tünet:** `ImportError: libstdc++.so.6: cannot open shared object file`
+**Régi tünet:** `ImportError: libstdc++.so.6: cannot open shared object object file`.
 
-**Megoldás (Ubuntu/Debian):**
+**2026-07-19 óta:** a `deepeval` nem kötelező, így ez a hiba sem jellemző. Ha mégis előfordul (pl. egy másik projekt importálja):
 
 ```bash
 sudo apt-get update
@@ -314,8 +362,10 @@ sudo apt-get install -y libstdc++6
 ## Kapcsolódó
 
 - [Runbook: HuLU futtatása](run-hulu-modell-x.md) — az env használata benchmark futtatáshoz
+- [Runbook: Benchmark futtatás OpenAI backenden](run-modell-x-openai-backend.md) — llama-server / vLLM / felhő OpenAI esetén
 - [Runbook: LLM Judge prompt](llm-judge-prompt-template.md) — judge hívás deepeval-lal
 - [Runbook: Aggregáció](aggregate-results.md) — pandas/matplotlib scriptek
 - [Runbook: Debug](debug-modell-nem-valaszol.md) — mit tegyél, ha valami nem megy
+- [Concept: OpenAI-kompatibilis backend](../concepts/openai-backend-support.md) — a két backend részletes leírása
 - [Overview](../overview.md) — projekt cél és hatókör
 - [SCHEMA](../SCHEMA.md) — oldalformátum

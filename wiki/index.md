@@ -3,13 +3,13 @@
 *Típus:* concept
 *Forrás(ok):* belső projekt-katalógus
 *Létrehozva:* 2026-06-06
-*Frissítve:* 2026-07-15
+*Frissítve:* 2026-07-19
 
 ---
 
 *Tartalomkatalógus. Frissül, ahogy új oldalak jönnek létre.*
 
-*Utolsó frissítés:* 2026-07-15 (v1.3 — 11 modell × 2 mód × 5 benchmark kész, végleges baseline riport)
+*Utolsó frissítés:* 2026-07-19 (v1.3.4 — openai-backend támogatás, lokális Qwen3-Next-80B IQ3_XXS első lokális modell, conda env + requirements.txt rögzítve)
 
 ## ⚙️ Futtatható kód és adatok
 
@@ -24,9 +24,10 @@ A teljes projekt-struktúra (scriptek, adatok, eredmények, state) a gyökér [`
 
 ## 🛑 Tervezési elvek
 
-- [Checkpoint és folytatható futtatás](concepts/checkpoint-progress.md) — stop-on-error + resume politika (új, 2026-06-06)
+- [Checkpoint és folytatható futtatás](concepts/checkpoint-progress.md) — stop-on-error + resume politika, közös `FatalBackendError` (v1.1, 2026-07-19)
 - [LLM-as-a-Judge módszertan](concepts/llm-as-judge.md) — bíró modellek használata
 - [Ollama API kliens](concepts/ollama-api-client.md) — újrafelhasználható Python wrapper
+- [OpenAI-kompatibilis backend](concepts/openai-backend-support.md) — `ollama` és `openai` backend támogatás a run scriptekben, llama-server / vLLM / felhő OpenAI (v1.3.4, 2026-07-19)
 
 ## Kötelező oldalak
 
@@ -80,6 +81,7 @@ A teljes projekt-struktúra (scriptek, adatok, eredmények, state) a gyökér [`
 - [GPT-OSS 120B (Cloud)](entities/gpt-oss-120b.md) — 120B, think/nothink azonos
 - [GPT-OSS 20B (Cloud)](entities/gpt-oss-20b.md) — leggyengőbb aktív (MMLU 46%)
 - [Qwen3-Next 80B (Cloud)](entities/qwen3-next-80b.md) — ⚠️ RETIRED 2026-06-16 (HTTP 410)
+- [Qwen3-Next 80B Thinking GGUF (lokális)](entities/qwen3-next-80b-lokalis.md) — **új lokális referencia** (v1.3.4, 2026-07-19), IQ3_XXS, llama-server `localhost:8080/v1`; az egyetlen lokális benchmark-modell a modell-poolban
 
 ### Datasetek (5 db)
 
@@ -95,10 +97,11 @@ A teljes projekt-struktúra (scriptek, adatok, eredmények, state) a gyökér [`
 - [Benchmark vs. benchmark](comparisons/benchmark-vs-benchmark.md) — mit mér melyik, mikor melyiket
 - [Cloud vs. lokális](comparisons/cloud-vs-lokal.md) — költség, latency, privacy tradeoff
 
-## Runbooks (végrehajtható eljárások) — 5 db (v1.3)
+## Runbooks (végrehajtható eljárások) — 6 db (v1.3.4)
 
-- [Setup környezet](runbooks/setup-kornyezet.md) — conda env, telepítés, hibafelderítés
-- [HuLU futtatása modell X-en](runbooks/run-hulu-modell-x.md) — teljes pipeline
+- [Setup környezet](runbooks/setup-kornyezet.md) — conda env, `requirements.txt` telepítés, dataset-ek, hibafelderítés (v1.3.4)
+- [HuLU futtatása modell X-en](runbooks/run-hulu-modell-x.md) — teljes pipeline (ollama backend, alapértelmezett)
+- [Benchmark futtatás OpenAI backenden](runbooks/run-modell-x-openai-backend.md) — llama-server / vLLM / felhő OpenAI esetén (v1.3.4, 2026-07-19)
 - [LLM-judge prompt template](runbooks/llm-judge-prompt-template.md) — újrafelhasználható bíró prompt
 - [Eredmények aggregációja](runbooks/aggregate-results.md) — composite score + riport
 - [Debug: modell nem válaszol](runbooks/debug-modell-nem-valaszol.md) — gyakori hibák + retry
@@ -130,11 +133,11 @@ A teljes projekt-struktúra (scriptek, adatok, eredmények, state) a gyökér [`
 
 ## Statisztikák
 
-- **Fájlok száma:** 58 markdown (.md) — 13 riport + végleges baseline riport + composite CSV + 2 heatmap + 7 új modell-entitás
-- **Sorok száma:** ~11000
-- **Oldalak kategóriánként:** 4 kötelező + 15 concept + 13 entity + 3 comparison + 5 runbook + 13 report
-- **PNG-k a riportokban:** 4+ db (hulu: think_nothink + accuracy; per-benchmark breakdown; stat heatmap; gen/ling heatmap) — v1.3
+- **Fájlok száma:** 61 markdown (.md) — 16 concept (új: openai-backend-support) + 14 entity (új: qwen3-next-80b-lokalis) + 3 comparison + 6 runbook (új: run-modell-x-openai-backend) + 13 report + 4 kötelező
+- **Sorok száma:** ~12000
+- **Oldalak kategóriánként:** 4 kötelező + 16 concept + 14 entity + 3 comparison + 6 runbook + 13 report
+- **PNG-k a riportokban:** 4+ db (hulu: think_nothink + accuracy; per-benchmark breakdown; stat heatmap; gen/ling heatmap)
 - **Belső linkek:** minden wiki-oldal legalább 3 másikra hivatkozik
 - **Nyelv:** magyar (technikai kifejezések angolul)
 - **Módszer:** Karpathy LLM Wiki minta
-- **Állapot (2026-07-15):** 11 modell × 2 mód × 5 benchmark = 110 benchmark-futtatás kész, végleges baseline riport (`report-2026-07-14.md`) aktív
+- **Állapot (2026-07-19, v1.3.4):** openai-backend támogatás a 4 run scriptben + lokális Qwen3-Next-80B IQ3_XXS referencia; conda env `eval-hu` + `requirements.txt` rögzítve; a teljes benchmark-futtatás és a `report-2026-07-19-lokális-qwen3-next.md` a felhasználó indítására vár.

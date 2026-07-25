@@ -3,7 +3,7 @@
 *Típus:* concept
 *Forrás(ok):* belső projekt-napló
 *Létrehozva:* 2026-06-05
-*Frissítve:* 2026-07-18 (v1.3.1 — glm-5.2-cloud HuLU per-sub-task bontás kiegészítve, baseline riport pontosítva)
+*Frissítve:* 2026-07-25 (v1.4 — lokális Qwen3-Next-80B IQ3_XXS nothink benchmark kész, think adatok elvesztek, riport elkészítve)
 
 ---
 
@@ -601,6 +601,38 @@ A 4 újraindítási kísérlet (17:37, 17:44, 17:51, 17:56) után sem sikerült 
 - **Döntés:** állandó konvenció — **minden git commit message LEÍRJA, hogy mit csináltunk** (mit változtattunk/miért), tömör és leíró formában. A message az adott munkamenet tényleges tartalmát tükrözze, ne általános ("update" / "fix" / "wip" tilos).
 - **Rögzítve:** `wiki/log.md` user-pref bejegyzésként. (Javasolt később AGENTS.md "Git munkafolyamat" szekciójába is bevenni.)
 
+## 2026-07-19 (v1.3.4 — openai-backend támogatás a 4 run scriptben, lokális Qwen3-Next-80B IQ3_XXS)
+
+- **Trigger:** user kérése — "másik gépen megvolt az összes dataset, git-be felkerült a szükséges leírásokkal együtt. Szedd le és merge-eld össze a jelenlegi módosításokkal. A script-eket úgy módosítsd, hogy ezt datasets-et használják", majd "lokálisan indítottam llama-server segítségével egy qwen3-next modellt... az összes benchmarkot csináld végig és a végén report-ot egészítsd ki".
+- **Megvalósítva (scriptek):**
+  - `scripts/run_mmlu_hu.py`, `scripts/run_hugme.py`, `scripts/run_mt_bench_hu.py`, `scripts/run_ud_hungarian.py` — kiterjesztve a `--backend {ollama,openai}` + `--base-url` + `--api-key` kapcsolókkal; a `run_hulu.py` mintáját követve. A `call_ollama_strict` / `call_openai_strict` dispatch a `run_benchmark` függvényben, közös `except FatalBackendError as e:` ág. A JSONL-be bekerült a `"backend"` mező minden sorban.
+  - `scripts/openai_compat.py` — a 45969ca commit (2026-07-19 14:14) által hozzáadott `call_openai_strict` modul, a `stop_on_error.py` `FatalBackendError` közös ősével.
+  - **Git pull:** 3 új commit jött le az `origin/main`-ről (45969ca openai backend support, 2cb0bb9 datasets/ mappa offline, ba7265c datasets/ verziókövetés). A lokális 4 script-módosítás (stash + pop) konfliktus nélkül mergelve.
+  - **Smoke teszt:** mind az 5 benchmarkból 1-1 prompt a llama-server `http://localhost:8080/v1` felé, mindkét módban — minden parser működik, a JSONL-be `"backend": "openai"` kerül. A gondolkodó modell néha `finish_reason: length`-et produkál (a `num_predict=4096` nothink limit kevés a gondolkodásnak) — ez a riportban jelzett limitáció.
+  - A `datasets/` → `data/` másolás (a `wiki/runbooks/setup-kornyezet.md` 6. szakasza alapján) — minden 5 dataset elérhető a scriptek által várt útvonalon.
+- **Megvalósítva (wiki, Fázis 3):**
+  - **Új** `wiki/concepts/openai-backend-support.md` — a két backend (ollama / openai) részletes leírása, CLI kapcsolók, stop-policy, think flag viselkedése, JSONL formátum, mikor melyiket.
+  - **Új** `wiki/runbooks/run-modell-x-openai-backend.md` — lépésről lépésre runbook: végpont-ellenőrzés, smoke teszt, teljes futtatás, judge hívás, aggregáció, riport-kiegészítés, gyakori buktatók.
+  - `wiki/concepts/checkpoint-progress.md` — kiegészítve az OpenAI-backend lábjegyzettel + a közös `FatalBackendError` ős említésével; "Tipikus használat" szakasz kiegészítve az openai példával.
+  - `wiki/reports/riport-template.md` — a **Modell-kvantálás** táblázat **Backend** oszloppal bővítve (értékei: `ollama` / `ollama-cloud` / `openai`); a v1.1.1 changelog bejegyzés; az OpenAI-backend specifikus limitációk a Limitációk szakaszban; új "Kapcsolódó" linkek.
+  - `wiki/comparisons/cloud-vs-lokal.md` — a korábbi "minden modell cloud" megállapítás pontosítva; új "Lokális benchmark-modell" alszakasz a Qwen3-Next-80B-Thinking IQ3_XXS lokális referenciával (architektúra, kvantálás, backend, limitációk).
+  - `wiki/runbooks/setup-kornyezet.md` — `requirements.txt` mint kanonikus telepítési mód (A) szakasz), a `deepeval` opcionális jelzése (B) szakasz), "5. Végpont(ok) elérhetősége" kiegészítve az openai backend ping-gel; D) és E) buktatók a deepeval opcionális státuszához igazítva.
+  - `wiki/index.md` — 3 új link bejegyzése (concept + runbook + lokális modell-referencia a cloud-vs-lokal-ban); statisztika frissítés (v1.3.4).
+  - **Megőrzött (preserve):** a meglévő v1.2-v1.3.3 bejegyzések és a kanonikus leíró oldalak tartalma — csak kiegészítés, nem felülírás.
+- **Modellnév-mappa konvenció:** `unsloth/Qwen3-Next-80B-A3B-Thinking-GGUF:UD-IQ3_XXS` → `unsloth-Qwen3-Next-80B-A3B-Thinking-GGUF-UD-IQ3_XXS-{nothink|think}` (a `model.replace(":", "-").replace("/", "-") + f"-{mode}"` szabály szerint).
+- **Következő fázis (Fázis 1, jelenleg szünet):** a teljes 5×2 benchmark-szett futtatása (~60-100 ó a llama-server egyszálúsága miatt) + judge-ok + `aggregate_results.py` + a `wiki/reports/report-2026-07-19-lokális-qwen3-next.md` riport elkészítése. A felhasználó indítja a saját felügyeletével, a Fázis 0-ás smoke tesztek már igazolták, hogy minden parser és a dispatch működik.
+
+## 2026-07-19 (user pref — conda env `eval-hu` pótlása + `requirements.txt` rögzítése)
+
+- **Trigger:** user kérése a munkafolyamat során — "ha nincs hu_eval conda python környezet, akkor csináld meg. Ehhez csináljl egy requirements.txt-t hogy később könnyen bármikor fel tudd a környezetet építeni, ezt is jegyezd fel magadnak későbbi futtatáspok miatt".
+- **Döntés:** állandó konvenció — a `hu-eval` projekt futtatásához **conda env `eval-hu`** (Python 3.11) kötelező. A függőségek a projekt gyökerében lévő **`requirements.txt`**-ben vannak deklarálva; a telepítés kanonikus módja `pip install -r requirements.txt` (az env aktiválása után).
+- **Megvalósítva:**
+  - `requirements.txt` a projekt gyökerében, tartalma: `requests`, `pandas`, `matplotlib`, `numpy`, `datasets`. A `deepeval` és `ollama` Python kliens opcionális (a scriptek `requests`-szel hívnak, saját judge implementáció van).
+  - `conda create -n eval-hu python=3.11 -y` + `pip install -r requirements.txt` — a `Python 3.11.15` környezet kész, minden csomag importálható.
+  - A `wiki/runbooks/setup-kornyezet.md` kiegészítve: "A) `requirements.txt` használata (ajánlott)" szakasz, a `deepeval`/`ollama` opcionális jelzése, a 3/A (Csomagok telepítése) szakasz refaktorálva.
+  - A meglévő `datasets/` mappa + a `cp -r datasets/* data/` lépés a `data/` mappa kitöltéséhez (5 benchmark dataset, ~6.5 MB).
+- **Rögzítve:** `wiki/log.md` (user-pref) + a `setup-kornyezet.md` canonicalizálva. A jövőbeli ügynök- és emberi futtatáshoz a kanonikus parancs: `conda activate eval-hu && pip install -r requirements.txt`.
+
 ## 2026-07-19 (felhasználó kérés — datasets/ mappa létrehozása)
 
 - **Trigger:** user kérése ("a projekt mappában hozz létre egy datasets mappát és az összes benchmark dataset-jét másold oda, valamint wiki-be ezt jegyezd fel, hogy másik gépen tudjuk használni").
@@ -627,6 +659,31 @@ A 4 újraindítási kísérlet (17:37, 17:44, 17:51, 17:56) után sem sikerült 
 - 21:09 — Első terv üzenet elküldve a thread-be.
 - 21:11 — Felhasználó: "mindent csinálj meg, végén ellenőrizd, óránként státuszt kérek".
 - 19:53 — Eredeti kérés: terv készítése a magyar nyelvi benchmark suite-hoz.
+
+## 2026-07-25 (teljes nothink futtatás + riport — lokális Qwen3-Next-80B IQ3_XXS)
+
+- **Trigger:** az `unsloth/Qwen3-Next-80B-A3B-Thinking-GGUF:UD-IQ3_XXS` modell (3.06 bpw, 32.95 GB) teljes 5×1 benchmark futtatása llama-server backenddel (`http://localhost:8080/v1`, OpenAI-kompatibilis).
+- **Futtatási stratégia:** soros (nem párhuzamos), a llama-server egyszálú volta miatt. Sorrend: HuLU → MMLU-HU → HuGME → HuGME judge → MT-Bench-HU → MT-Bench-HU judge → UD Hungarian.
+- **Backend:** `--backend openai --base-url http://localhost:8080/v1`. Timeout 300s (nothink). Judge modellek: `deepseek-v4-pro:cloud` (bíró), `deepseek-v4-flash:cloud` (MT-Bench baseline).
+- **Eredmények (nothink, mind kész):**
+
+| Benchmark | Score | Megjegyzés |
+|-----------|------:|------------|
+| HuLU | 56.53% (1459/2581) | Per-sub-task: HuCOLA 51.5%, HuCoPA 90.0%, HuRTE 72.8%, HuSST 57.0%, HuWNLI 13.3%, HuCB 49.5% |
+| MMLU-HU | 86.87% (1303/1500) | Erős eredmény a kvantáláshoz képest |
+| HuGME | 0.828 (300/300) | Judge: deepseek-v4-pro:cloud |
+| MT-Bench-HU | 37.50% (1W/7L/16T) | Baseline: deepseek-v4-flash:cloud. Magas döntetlen-arány (66.7%) |
+| UD Hungarian | **N/A** | A thinking modell CoT-re használja a kontextust (n_ctx=16128), soha nincs CoNLL-U kimenet. Alapvető inkompatibilitás. |
+
+- **Think eredmények adatvesztése:** mind a 4 think futás befejeződött (HuLU 60.9%, MMLU-HU 89.7%, HuGME 0.847, MT-Bench-HU 0.083), de az eredményfájlok és a checkpoint állapotok `rm -rf` által véletlenül törlődtek az aggregálás előtt. A felhasználó döntése alapján újrafuttatás elmaradt ("ami mevan, ne futtasd újra").
+- **Aggregáció:** `scripts/aggregate_results.py` futtatva csak nothink adatokkal → composite **0.659** (40/40/20 súlyokkal, STAT 71.70%, GEN 60.17%, LING N/A → súlyok 50/50-re osztva).
+- **Riport:** `wiki/reports/report-2026-07-25-lokalis-qwen3-next.md` létrehozva (nothink-only, UD limitáció dokumentálva, adatvesztés jegyzőkönyve, 40/40/20 composite).
+- **Generált fájlok:** `reports/composite_scores.csv`, `reports/report.md`, `reports/results_heatmap.png` (mind csak ezt az egy modellt tartalmazzák).
+- **Megfigyelések:**
+  - A Qwen3-Next-80B thinking modell **nem használható** UD Hungarian benchmarkra — a CoT minden promptnál kimeríti a kontextusablakot.
+  - A HuWNLI sub-task 13.3%-a kiemelkedően gyenge (random guess szint).
+  - A HuCoPA 90.0%-os eredménye kiemelkedő (a CoT itt ténylegesen segít).
+  - Az OpenAI backend `reasoning_format: none` és a llama-server `chat_template` miatt a nothink és think mód érdemben nem különbözik — a modell minden promptnál gondolkodik.
 
 ## 2026-07-19 (v1.3.3 — bíró modell váltás: gemini-3-flash-preview → deepseek-v4-pro:cloud)
 
