@@ -1,4 +1,0 @@
-model,hugme,hulu,mt_bench_hu,mmlu_hu,composite_score
-deepseek-v4-flash-cloud-nothink,,,,,
-deepseek-v4-flash-cloud-think,,,,,
-unsloth-Qwen3-Next-80B-A3B-Thinking-GGUF-UD-IQ3_XXS-nothink,0.8283,0.5653,0.3750,0.8687,0.6593

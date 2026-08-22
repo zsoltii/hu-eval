@@ -3,7 +3,7 @@
 *Típus:* concept
 *Forrás(ok):* belső projekt-napló
 *Létrehozva:* 2026-06-05
-*Frissítve:* 2026-07-25 (v1.4 — lokális Qwen3-Next-80B IQ3_XXS think benchmark kész, a modellnek nincs nothink módja, riport elkészítve)
+*Frissítve:* 2026-07-28 (v1.6 — összevont riport: 11 cloud + 1 lokális modell)
 
 ---
 
@@ -709,4 +709,38 @@ A 4 újraindítási kísérlet (17:37, 17:44, 17:51, 17:56) után sem sikerült 
   - `runbooks/aggregate-results.md` — bíró modell (v1.1), num_judged mező, hibakereső táblázat, "Új bíró modell" szakasz frissítve.
   - **Megőrzött (preserve):** a történeti riportok (`benchmark-statusz-*`, `eredmeny-osszesites-2026-07-14`) és a `log.md` 2026-06-07/2026-07-11 bejegyzései — ezek akkori állapotot rögzítenek, nem módosítjuk (csak a kanonikus leíró oldalakat és a jövőbeli riport sablonját).
 - **Következmény:** a régi gemini-3-flash-preview HuGME/MT-Bench eredmények nem reprodukálhatók; a HuGME és MT-Bench-HU benchmarkokat újra kell futtatni a `deepseek-v4-pro:cloud` bíróval (a deepseek saját sorai független bíróval). A `rejudge_hugme.py` és `rejudge_mt_bench.py` scriptek készen állnak.
+
+## 2026-07-27 (v1.5 — UD Hungarian v4 benchmark: Qwen3-Next-80B IQ3_XXS think, 128K kontextus)
+
+- **Trigger:** lokális Qwen3-Next-80B-A3B-Thinking GGUF UD-IQ3_XXS modell UD Hungarian benchmarkjának befejezése.
+- **Kontextus:** a modell thinking-only (nincs nothink mód), 128K kontextus, llama-server `-c 131072 -ctk q5_1 -ctv q5_1 --port 8080 --no-mmap --parallel 1 -fa on --op-offload -t 20`.
+- **Dataset:** `data/ud_hungarian/ud_hungarian_v4.jsonl` — v4 prompt: explicit CoNLL-U 10 oszlop leírás + példa mondat ("A macska az asztalon alszik.") + "CSAK a táblázatot add meg" utasítás. Alapvetés: a modell nem ismeri a CoNLL-U formátumot, ezért részletesen le kell írni.
+- **Script:** `scripts/run_ud_v3.py` — v4 dataset, 128K kontextus, `max_tokens=65536`, 1800s timeout/mondat, streaming, checkpoint+resume. CLI args: `--model`, `--base-url`, `--max-time`, `--reset`.
+- **Eredmények (449 mondat, 437 feldolgozva, 12 skip/timeout):**
+  - Composite (UPOS+UAS+LAS)/3: **0.6473**
+  - UPOS: **0.7936** (átlag, csak értelmezhető mondatokon 0.8218)
+  - UAS: **0.6314** (átlag, csak értelmezhető mondatokon 0.6523)
+  - LAS: **0.5170** (átlag, csak értelmezhető mondatokon 0.5578)
+  - 34 mondat UPOS=100%, 32 mondat UPOS<50%
+  - Átlagos reasoning: 27118 karakter, átlagos idő: 325s/mondat
+  - Összes futásidő: ~45.4 óra
+  - Finish reason: 436 stop, 1 length
+- **Fájlok:**
+  - `scripts/prepare_ud_v3.py` — v4 dataset generátor
+  - `scripts/run_ud_v3.py` — v4 runner (CLI args, review hibák javítva)
+  - `data/ud_hungarian/ud_hungarian_v4.jsonl` — 449 mondat, v4 prompt
+  - `results/unsloth-Qwen3-Next-80B-A3B-Thinking-GGUF-UD-IQ3_XXS-think/ud_hungarian_results.jsonl` — 437 eredmény
+  - `results/unsloth-Qwen3-Next-80B-A3B-Thinking-GGUF-UD-IQ3_XXS-think/ud_hungarian_summary.json` — aggregált eredmény
+  - `state/unsloth-Qwen3-Next-80B-A3B-Thinking-GGUF-UD-IQ3_XXS-think/ud_hungarian_v4.json` — checkpoint
+- **AGENTS.md frissítve:** "Soha ne állítsd le a lokális AI szervert!" szabály hozzáadva.
+
+## 2026-07-28 (v1.6 — Összevont riport: 11 cloud baseline + 1 lokális modell)
+
+- **Trigger:** Qwen3-Next-80B IQ3_XXS lokális modell eredményeinek beolvasztása a 2026-07-14 baseline riportba.
+- **Változtatások:**
+  - `reports/report-2026-07-14.md` — Qwen3-Next-80B IQ3_XXS (lokális, think) hozzáadva MINDEN benchmark táblázathoz (HuLU, MMLU-HU, HuGME, MT-Bench-HU, UD Hungarian, Composite A+B). HuGME/MT-Bench-HU skála-különbség lábjegyzetekkel jelölve. Modell-kvantálás táblázat kiegészítve. Frissítve: 2026-07-28.
+  - `reports/composite_scores-2026-07-27.csv` — UD adatokkal kiegészített CSV.
+  - `reports/report-2026-07-27-lokalis-qwen3-next.md` — végleges önálló riport (Karpathy módszer).
+- **Megjegyzés:** a HuGME és MT-Bench-HU eredmények skálái nem közvetlenül összehasonlíthatóak a cloud modellekkel (0–100% vs. 0–10% HuGME, single-baseline vs. multi-baseline MT-Bench). A STAT és LING dimenziók viszont közvetlenül összehasonlíthatóak.
+- **Git:** változtatások stagelve, commit kérésre.
 

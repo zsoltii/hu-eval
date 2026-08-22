@@ -44,7 +44,7 @@ def call_openai_strict(
     prompt: str,
     model: str,
     max_retries: int = 2,
-    timeout: int = 120,
+    timeout: int = 300,
     base_url: str = "http://localhost:11434/v1",
     api_key: str = "ollama",
     think: bool = False,

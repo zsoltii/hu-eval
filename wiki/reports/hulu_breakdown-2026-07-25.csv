@@ -1,0 +1,2 @@
+model,mode,composite,overall,hucola_acc,hucola_n,hucopa_acc,hucopa_n,hurte_acc,hurte_n,husst_acc,husst_n,huwnli_acc,huwnli_n,hucb_acc,hucb_n
+unsloth-Qwen3-Next-80B-A3B-Thinking-GGUF-UD-IQ3_XXS,nothink,0.5570,0.5653,0.5154,910,0.9000,100,0.7284,243,0.5700,1165,0.1333,60,0.4951,103

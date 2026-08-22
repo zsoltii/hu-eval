@@ -193,7 +193,7 @@ def run_benchmark(
                             item["prompt"], model,
                             think=think,
                             num_predict=(16384 if think else 4096),
-                            timeout=(300 if think else 120),
+                            timeout=(600 if think else 300),
                             max_retries=(1 if think else 2),
                             base_url=base_url,
                             api_key=api_key,
@@ -203,7 +203,7 @@ def run_benchmark(
                             item["prompt"], model,
                             think=think,
                             num_predict=(16384 if think else 4096),
-                            timeout=(300 if think else 120),
+                            timeout=(600 if think else 300),
                             max_retries=(1 if think else 2),
                         )
                     raw = response.get("response", "").strip()

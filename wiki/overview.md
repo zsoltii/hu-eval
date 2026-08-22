@@ -26,7 +26,7 @@ Minden elérhető nyelvi modell (cloud + lokális) **magyar nyelvű képességei
 - Production deployment (csak a mérés)
 - Lokális modellek (qwen3.5:4b/2b/0.8b) — tervezve, még nem futtatták
 
-> **Státusz (2026-07-15):** mind a 5 benchmark implementálva és lefuttatva 11 modellen × 2 módban. A `qwen3-next:80b-cloud` RETIRED (HTTP 410, 2026-06-16) — csak HuLU készült róla. A **végleges baseline riport**: [`reports/report-2026-07-14.md`](reports/report-2026-07-14.md).
+> **Státusz (2026-07-27):** mind az 5 benchmark lefuttatva a Qwen3-Next-80B IQ3_XXS lokális modellen (think mód, UD Hungarian v4 kész). A **végleges riport**: [`Qwen3-Next-80B IQ3_XXS (2026-07-27)`](reports/report-2026-07-27-lokalis-qwen3-next.md). A **baseline riport** (11 modell): [`Végleges benchmark riport (2026-07-14)`](reports/report-2026-07-14.md).
 
 ## Elérhető modellek (jelenlegi pool)
 
@@ -82,7 +82,7 @@ Súlyozott aggregátum (40/40/20), 0-100 skálán, riportban megjelenítve. Köt
 2. ✅ **Statisztikai benchmarkok** — HuLU (2581 item/modell), MMLU-HU (1500 item/modell)
 3. ✅ **Generatív benchmarkok** — HuGME (300 prompt × 6 metrika), MT-Bench-HU (24 kérdés × 2 turn GSB)
 4. ✅ **Nyelvészeti mélytesztek** — UD Hungarian (137 mondat, CoNLL-U parse)
-5. ✅ **Aggregáció és riport** — végleges baseline riport (`reports/report-2026-07-14.md`), 2 heatmap + composite CSV
+5. ✅ **Aggregáció és riport** — végleges baseline riport (`wiki/reports/report-2026-07-14.md`), Qwen3-Next-80B IQ3_XXS riport (`wiki/reports/report-2026-07-27-lokalis-qwen3-next.md`), 2 heatmap + composite CSV
 
 ### Következő lépések (jövőbeli)
 
@@ -98,4 +98,5 @@ Súlyozott aggregátum (40/40/20), 0-100 skálán, riportban megjelenítve. Köt
 - [Index](index.md) — tartalomjegyzék
 - [Log](log.md) — tevékenységnapló
 - [Végleges baseline riport](reports/report-2026-07-14.md) — 11 modell × 2 mód × 5 benchmark
+- [Qwen3-Next-80B IQ3_XXS riport](reports/report-2026-07-27-lokalis-qwen3-next.md) — 1 modell × think × 5 benchmark (UD v4 kész)
 - [Karpathy módszer](../llm-wiki/karpathy-llm-wiki-method.md) — elméleti háttér

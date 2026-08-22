@@ -3,13 +3,13 @@
 *Típus:* concept
 *Forrás(ok):* belső projekt-katalógus
 *Létrehozva:* 2026-06-06
-*Frissítve:* 2026-07-25
+*Frissítve:* 2026-07-28
 
 ---
 
 *Tartalomkatalógus. Frissül, ahogy új oldalak jönnek létre.*
 
-*Utolsó frissítés:* 2026-07-25 (v1.4 — Qwen3-Next-80B IQ3_XXS nothink benchmark kész, think adatok elvesztek, riport elkészült)
+*Utolsó frissítés:* 2026-07-28 (v1.6 — összevont riport: 11 cloud baseline + 1 lokális modell)
 
 ## ⚙️ Futtatható kód és adatok
 
@@ -81,7 +81,7 @@ A teljes projekt-struktúra (scriptek, adatok, eredmények, state) a gyökér [`
 - [GPT-OSS 120B (Cloud)](entities/gpt-oss-120b.md) — 120B, think/nothink azonos
 - [GPT-OSS 20B (Cloud)](entities/gpt-oss-20b.md) — leggyengőbb aktív (MMLU 46%)
 - [Qwen3-Next 80B (Cloud)](entities/qwen3-next-80b.md) — ⚠️ RETIRED 2026-06-16 (HTTP 410)
-- [Qwen3-Next 80B Thinking GGUF (lokális)](entities/qwen3-next-80b-lokalis.md) — **lokális referencia** (v1.4, 2026-07-25), IQ3_XXS, llama-server `localhost:8080/v1`; csak think módban fut (nincs nothink); az egyetlen lokális benchmark-modell a modell-poolban
+- [Qwen3-Next 80B Thinking GGUF (lokális)](entities/qwen3-next-80b-lokalis.md) — **lokális referencia** (v1.5, 2026-07-27), IQ3_XXS, llama-server `localhost:8080/v1`; csak think módban fut (nincs nothink); UD Hungarian v4 kész (UPOS 79.36%, composite 64.73%)
 
 ### Datasetek (5 db)
 
@@ -110,7 +110,9 @@ A teljes projekt-struktúra (scriptek, adatok, eredmények, state) a gyökér [`
 
 ### 🎯 BASELINE (hivatalos alapérték — minden jövőbeli összehasonlítás ehhez viszonyít)
 
-- **[Végleges benchmark riport (2026-07-14)](reports/report-2026-07-14.md)** — 11 modell × 2 mód × 5 benchmark, 40/40/20 composite (AGENTS.md kötelező), 2 heatmap (stat + gen/ling), queue kész 20:14 CEST. **Ez a kanonikus kiindulási alapérték.**
+- **[Teljes összesítő riport (`wiki/reports/report.md`)](reports/report.md)** — kanonikus teljes riport (szimbolikus link a legfrissebb dátumozott riportra). Új modell hozzáadásakor ezt is frissíteni kell!
+- **[Végleges benchmark riport (2026-07-14)](reports/report-2026-07-14.md)** — 11 modell × 2 mód × 5 benchmark + Qwen3-Next-80B IQ3_XXS (lokális), 40/40/20 composite (AGENTS.md kötelező), 2 heatmap (stat + gen/ling), queue kész 20:14 CEST. **Ez a kanonikus kiindulási alapérték.**
+- **[Qwen3-Next-80B IQ3_XXS riport (2026-07-27)](reports/report-2026-07-27-lokalis-qwen3-next.md)** — 1 modell × think × 5 benchmark (UD v4 kész), 40/40/20 composite = 64.85%. **Végleges, UD eredménnyel.**
 - [Riport template](reports/riport-template.md) — v1.1 (2026-07-15), a riport formátumdefiníciója (sebesség/költség törölve, két composite tábla, két heatmap)
 - [Composite CSV (2026-07-14)](reports/composite_scores-2026-07-14.csv) — 22 sor × 13 oszlop, pandas export (a baseline nyers számai)
 - [Stat heatmap (2026-07-14)](reports/results_heatmap_stat-2026-07-14.png) — HuLU + MMLU-HU, RdYlGn
@@ -140,4 +142,4 @@ A teljes projekt-struktúra (scriptek, adatok, eredmények, state) a gyökér [`
 - **Belső linkek:** minden wiki-oldal legalább 3 másikra hivatkozik
 - **Nyelv:** magyar (technikai kifejezések angolul)
 - **Módszer:** Karpathy LLM Wiki minta
-- **Állapot (2026-07-25, v1.4):** lokális Qwen3-Next-80B IQ3_XXS think benchmark kész (4/5 benchmark, UD N/A 16K-n, 64K-on már megy), a modellnek nincs nothink módja, `report-2026-07-25-lokalis-qwen3-next.md` elkészült.
+- **Állapot (2026-07-28, v1.6):** összevont riport: 11 cloud + 1 lokális modell (`reports/report.md` kanonikus). Composite: 64.85% (Qwen3-Next-80B IQ3_XXS lokális). Riport: `reports/report-2026-07-14.md`.

@@ -38,7 +38,7 @@ Részletek: [Checkpoint és folytatható futtatás](concepts/checkpoint-progress
 - **Eredmények** (per-modell JSONL + summary): `results/` mappa
 - **Checkpoint state** (futás állapota): `state/` mappa
 - **Logok** (append-only futás-napló): `logs/` mappa
-- **Riportok** (aggregált kimenet): `reports/` mappa
+- **Riportok** (aggregált kimenet): `wiki/reports/` mappa
 
 A teljes projekt-térkép a gyökér [`README.md`](../README.md) fájlban.
 
@@ -77,7 +77,7 @@ használt konvenció).
     - "Hogyan értékeld ki a JSON eredményeket"
     - "Hogyan debuggolj, ha egy modell nem válaszol"
 
-5. **`reports/`** — kész riportok (összesített eredmények)
+5. **`wiki/reports/`** — kész riportok (összesített eredmények)
     - végleges baseline riport (2026-07-14), heatmap-ek, composite CSV
     - státusz riportok, version history, per-sub-task breakdown
 

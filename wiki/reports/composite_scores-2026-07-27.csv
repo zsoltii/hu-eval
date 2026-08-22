@@ -1,0 +1,2 @@
+model,hugme,hulu,mt_bench_hu,mmlu_hu,ud_composite,ud_upos,ud_uas,ud_las,composite_score
+unsloth-Qwen3-Next-80B-A3B-Thinking-GGUF-UD-IQ3_XXS-nothink,0.8283,0.5653,0.3750,0.8687,0.6473,0.7936,0.6314,0.5170,0.6485
