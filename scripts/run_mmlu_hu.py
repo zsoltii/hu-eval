@@ -26,7 +26,7 @@ import requests
 
 sys.path.insert(0, str(Path(__file__).parent))
 from checkpoint import Checkpoint
-from stop_on_error import call_ollama_strict, OllamaFatalError, FatalBackendError
+from stop_on_error import call_ollama_strict, OllamaFatalError, FatalBackendError, MAX_OUTPUT_TOKENS
 from openai_compat import call_openai_strict
 
 OLLAMA_URL = "http://localhost:11434"
@@ -204,8 +204,8 @@ def run_benchmark(model: str, limit: int | None, reset: bool,
                         response = call_openai_strict(
                             shot_prompt, model,
                             think=think,
-                            num_predict=(16384 if think else 4096),
-                            timeout=(600 if think else 300),
+                            num_predict=None,
+                            timeout=(3600 if think else 900),
                             max_retries=(1 if think else 2),
                             base_url=base_url,
                             api_key=api_key,
@@ -214,8 +214,8 @@ def run_benchmark(model: str, limit: int | None, reset: bool,
                         response = call_ollama_strict(
                             shot_prompt, model,
                             think=think,
-                            num_predict=(16384 if think else 4096),
-                            timeout=(600 if think else 300),
+                            num_predict=None,
+                            timeout=(3600 if think else 900),
                             max_retries=(1 if think else 2),
                         )
                     raw = response.get("response", "").strip()
@@ -245,6 +245,11 @@ def run_benchmark(model: str, limit: int | None, reset: bool,
                 fout.flush()
                 os.fsync(fout.fileno())
                 cp.mark_completed(comp_id, is_correct)
+                # A duplikált (subject, id) kulcsokat egy futáson BELÜL is
+                # kihagyjuk — különben a megszakítás utáni resume más
+                # elemszámot adna, mint a folyamatos futás (a dataset minden
+                # kérdést kétszer tartalmaz; lásd AGENTS.md / 2026-10-22 riport).
+                completed_set.add(comp_id)
                 processed += 1
 
                 done = len(cp.state["completed_ids"])

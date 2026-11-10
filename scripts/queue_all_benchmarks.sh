@@ -2,6 +2,19 @@
 set -u
 cd "$(dirname "$0")/.."
 
+# Python interpreter feloldása: PYTHON env > conda eval-hu > projekt .venv.
+# A conda az eredeti gépi konvenció; a .venv a uv-alapú környezet conda nélküli gépeken.
+if [ -n "${PYTHON:-}" ]; then
+  PYTHON_BIN="$PYTHON"
+elif [ -x "$HOME/anaconda3/envs/eval-hu/bin/python" ]; then
+  PYTHON_BIN="$HOME/anaconda3/envs/eval-hu/bin/python"
+elif [ -x ".venv/bin/python" ]; then
+  PYTHON_BIN=".venv/bin/python"
+else
+  echo "❌ Nincs elérhető Python interpreter (conda eval-hu vagy .venv)." >&2
+  exit 1
+fi
+
 QUEUE_LOG="logs/queue_all_$(date +%Y%m%d_%H%M).log"
 echo "$(date) - queue_all_benchmarks indul: $QUEUE_LOG" | tee "$QUEUE_LOG"
 
@@ -18,6 +31,7 @@ MODELS=(
   "deepseek-v4-pro:cloud"
   "minimax-m3:cloud"
   "gpt-oss:20b-cloud"
+  "beam:cloud"
 )
 MODES=("nothink" "think")
 
@@ -53,7 +67,7 @@ for BENCH in "${BENCHMARKS[@]}"; do
       echo "$(date) - Benchmark indítása: $BENCH $MODEL ($MODE)" | tee -a "$QUEUE_LOG"
       TS=$(date +%Y%m%d_%H%M)
       LOG="logs/${BENCH}_${MODEL_SAFE}_${TS}.log"
-      $HOME/anaconda3/envs/eval-hu/bin/python "scripts/run_${BENCH}.py" \
+      "$PYTHON_BIN" "scripts/run_${BENCH}.py" \
         --model "$MODEL" --mode "$MODE" > "$LOG" 2>&1
       EXIT_CODE=$?
       if [ $EXIT_CODE -eq 0 ]; then
@@ -66,14 +80,14 @@ for BENCH in "${BENCHMARKS[@]}"; do
       # Judge lépés HuGME és MT-Bench esetén
       if [ "$BENCH" = "hugme" ]; then
         echo "$(date) - Judge indítása: $BENCH $MODEL ($MODE)" | tee -a "$QUEUE_LOG"
-        $HOME/anaconda3/envs/eval-hu/bin/python scripts/judge_hugme.py \
+        "$PYTHON_BIN" scripts/judge_hugme.py \
           --model "$MODEL" --mode "$MODE" >> "$LOG" 2>&1
         echo "$(date) - Judge: $BENCH $MODEL ($MODE): $?" | tee -a "$QUEUE_LOG"
       fi
 
       if [ "$BENCH" = "mt_bench_hu" ]; then
         echo "$(date) - Judge indítása: $BENCH $MODEL ($MODE)" | tee -a "$QUEUE_LOG"
-        $HOME/anaconda3/envs/eval-hu/bin/python scripts/judge_mt_bench.py \
+        "$PYTHON_BIN" scripts/judge_mt_bench.py \
           --model "$MODEL" --mode "$MODE" >> "$LOG" 2>&1
         echo "$(date) - Judge: $BENCH $MODEL ($MODE): $?" | tee -a "$QUEUE_LOG"
       fi

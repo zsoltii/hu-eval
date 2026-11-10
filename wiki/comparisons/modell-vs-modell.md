@@ -3,7 +3,7 @@
 *Típus:* comparison
 *Forrás(ok):* hu-eval projekt belső, Karpathy LLM Wiki módszer, [Overview](../overview.md)
 *Létrehozva:* 2026-06-06
-*Frissítve:* 2026-06-06
+*Frissítve:* 2026-10-17 (bíró modell: deepseek-v4-pro:0813-cloud)
 
 ---
 
@@ -59,7 +59,7 @@ Mérőszám: `min(névleges, hatékony) / 200000 × 100` — 200k token a teljes
 
 1. **Modellpár kiválasztása** — jellemzően 2-4 modell azonos kategóriából (pl. két cloud flagship, vagy két lokális kis modell)
 2. **Azonos promptkészlet** — ugyanaz a 50-100 prompt minden modellre, rögzített seed-del
-3. **Azonos bíró modell** — `deepseek-v4-pro:cloud` (hivatalos bíró 2026-07-19 óta; a `gemini-3-flash-preview:latest` megszűnt 2026-07-14) értékeli a válaszokat. *Megjegyzés: a `kimi-k2.6:cloud` bíró státusza 2026-06-07-én (v1.2.4) törölve — csak benchmark modell; a `deepseek-v4-pro` is benchmark-modell, ezért a self-bias elv miatt saját magát nem értékelheti.*
+3. **Azonos bíró modell** — `deepseek-v4-pro:0813-cloud` (hivatalos bíró 2026-10-17 óta; a `gemini-3-flash-preview:latest` megszűnt 2026-07-14) értékeli a válaszokat. *Megjegyzés: a `kimi-k2.6:cloud` bíró státusza 2026-06-07-én (v1.2.4) törölve — csak benchmark modell; a `deepseek-v4-pro` is benchmark-modell, ezért a self-bias elv miatt saját magát nem értékelheti.*
 4. **Vak értékelés** — a bíró nem tudja, melyik válasz melyik modellhez tartozik
 5. **Dimenziónkénti pontozás** — minden dimenzióra 0-100, indoklással
 6. **Kompozit számítás** — súlyozott átlag a fenti 4 dimenzióból
@@ -131,6 +131,7 @@ Az alábbi hat modell entity oldalára hivatkozunk (a projekt entity subagent-je
 - [Gemini 3 Flash Preview](../entities/gemini-3-flash.md) — cloud, gyors
 - [Qwen 3.5 397B Cloud](../entities/qwen3.5-397b.md) — cloud, legnagyobb
 - [Qwen 3.5 Lokális (4b / 2b / 0.8b)](../entities/qwen3.5-local.md) — lokális, három méret egy oldalon
+- [Qwen3.5-9B-MTP GGUF (lokális)](../entities/qwen3.5-9b-mtp-lokalis.md) — lokális 9B, UD-Q4_K_XL, llama-server, nothink (2026-10-24)
 
 ## Tervezett összehasonlítás-párok (backlog)
 

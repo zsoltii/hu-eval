@@ -2,10 +2,23 @@
 set -u
 cd "$(dirname "$0")/.."
 
+# Python interpreter feloldása: PYTHON env > conda eval-hu > projekt .venv.
+# A conda az eredeti gépi konvenció; a .venv a uv-alapú környezet conda nélküli gépeken.
+if [ -n "${PYTHON:-}" ]; then
+  PYTHON_BIN="$PYTHON"
+elif [ -x "$HOME/anaconda3/envs/eval-hu/bin/python" ]; then
+  PYTHON_BIN="$HOME/anaconda3/envs/eval-hu/bin/python"
+elif [ -x ".venv/bin/python" ]; then
+  PYTHON_BIN=".venv/bin/python"
+else
+  echo "❌ Nincs elérhető Python interpreter (conda eval-hu vagy .venv)." >&2
+  exit 1
+fi
+
 QUEUE_LOG="logs/queue_runner_$(date +%Y%m%d_%H%M).log"
 echo "$(date) - queue_runner indul: $QUEUE_LOG" | tee "$QUEUE_LOG"
 
-# Benchmark modellek — judge modellek (deepseek-v4-pro:cloud) NEM kerülnek ide.
+# Benchmark modellek — judge modellek (deepseek-v4-pro:0813-cloud) NEM kerülnek ide.
 # A kimi-k2.6:cloud benchmark modellként fut (bíró státusz törölve v1.2.4).
 # A minimax-m2.5:cloud és minimax-m2.7:cloud törölve (régi modellek, 2026-06-08).
 # A deepseek-v4-pro:cloud és minimax-m3:cloud think módjai 2026-06-09 hozzáadva.
@@ -54,7 +67,7 @@ for MODEL in "${MODELS[@]}"; do
     echo "$(date) - Benchmark indítása: $MODEL ($MODE)" | tee -a "$QUEUE_LOG"
     TS=$(date +%Y%m%d_%H%M)
     LOG="logs/hulu_${MODEL_SAFE_BASE}-${MODE}_${TS}.log"
-    $HOME/anaconda3/envs/eval-hu/bin/python scripts/run_hulu.py --model "$MODEL" --mode "$MODE" > "$LOG" 2>&1
+    "$PYTHON_BIN" scripts/run_hulu.py --model "$MODEL" --mode "$MODE" > "$LOG" 2>&1
     EXIT_CODE=$?
     if [ $EXIT_CODE -eq 0 ]; then
       echo "$(date) - $MODEL ($MODE): KÉSZ, exit=0, log: $LOG" | tee -a "$QUEUE_LOG"

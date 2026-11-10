@@ -25,8 +25,9 @@ import requests
 
 sys.path.insert(0, str(Path(__file__).parent))
 from checkpoint import Checkpoint
-from stop_on_error import call_ollama_strict, OllamaFatalError, FatalBackendError
+from stop_on_error import call_ollama_strict, OllamaFatalError, FatalBackendError, MAX_OUTPUT_TOKENS
 from openai_compat import call_openai_strict
+from deg_loop import is_degenerate
 
 OLLAMA_URL = "http://localhost:11434"
 DEFAULT_OPENAI_BASE_URL = "http://localhost:11434/v1"
@@ -35,6 +36,18 @@ DATASET_PATH = Path("./data/ud_hungarian/ud_hungarian_std.jsonl")
 DEFAULT_RESULTS_DIR = Path("./results")
 DEFAULT_STATE_DIR = Path("./state")
 LOG_PATH = Path("./logs/ud_hungarian_runs.log")
+
+# Degenerált (token-loopos) generáció esetén ennyi újrapróbálkozás történik.
+# A UD Hungarian az egyetlen benchmark hosszú szabad szöveges kimenettel, így
+# csak itt fordulhat elő ilyen hiba; a HuLU/MMLU 1 karakteres válaszokat ad.
+DEGENERATE_RETRIES = 2
+# Az újrapróbálkozás rövidebb token-plafonnal fut: a cél egy használható
+# minta, nem a maximális hossz. Így a használhatatlan (degenerált) generáció
+# ~1,5 perc alatt levágódik a 32k context helyett ~6 perc. A valid CoNLL-U
+# tábla a válasz elején van, így a rövidebb plafon nem vágja le a pontszámolt
+# részt (a 32k teljes generációk 70-95k karakteresek, a parse-olható tábla
+# ezek elején található).
+DEGENERATE_RETRY_MAX_TOKENS = 8192
 
 
 def parse_conllu_from_response(text: str, gold_tokens: list[dict]) -> dict | None:
@@ -63,20 +76,121 @@ def parse_conllu_from_response(text: str, gold_tokens: list[dict]) -> dict | Non
     result = {"upos_correct": 0, "head_correct": 0, "deprel_correct": 0,
               "upos_total": 0, "head_total": 0, "deprel_total": 0}
 
+    upos_re = re.compile(r"^[A-Z][A-Z0-9_-]*$")
+    # A 17 univerzális POS tag + a gyakori UD-specifikus kategória. A modell
+    # gyakran a tag NEVÉT írja ("noun", "proper", "adj") — ezeket is elfogadjuk.
+    pos_aliases = {
+        "NOUN": "NOUN", "VERB": "VERB", "ADJ": "ADJ", "ADJECTIVE": "ADJ",
+        "ADV": "ADV", "ADVERB": "ADV", "PROPN": "PROPN", "PROPER": "PROPN",
+        "PROPERNOUN": "PROPN", "PRON": "PRON", "PRONOUN": "PRON",
+        "DET": "DET", "DETERMINER": "DET", "ADP": "ADP", "PREPOSITION": "ADP",
+        "CCONJ": "CCONJ", "CONJ": "CCONJ", "CONJUNCTION": "CCONJ",
+        "SCONJ": "SCONJ", "SUBORDINATING": "SCONJ", "NUM": "NUM",
+        "NUMERAL": "NUM", "AUX": "AUX", "AUXILIARY": "AUX", "PART": "PART",
+        "PARTICLE": "PART", "INTJ": "INTJ", "INTERJECTION": "INTJ",
+        "PUNCT": "PUNCT", "PUNCTUATION": "PUNCT", "X": "X", "SYM": "SYM",
+        "COMPOUND": "COMPOUND", "C": "CCONJ", "U": "SCONJ",
+    }
+
+    def _pos_of(value: str) -> str | None:
+        """A POS tag kanonikus alakja, ha a cella POS-jellegű."""
+        v = (value or "").strip()
+        if not v:
+            return None
+        key = v.upper().split(":")[0].split("=")[0].strip()
+        if key in pos_aliases:
+            return pos_aliases[key]
+        return None
+
+    def _find_upos(parts: list[str]) -> tuple[int, str] | None:
+        """Az UPOS oszlop (index, érték).
+
+        A standard hely a 4. oszlop (index 3) — ezt preferáljuk. Ha ott nem
+        POS-jellegű érték van (a modell beszúr egy extra FORM-ot, vagy a POS
+        tag neve kisbetűvel jön máshol), akkor az első POS-jellegű oszlopot
+        vesszük. A 17 univerzális tag whitelistje védi a false positive-okat.
+        """
+        if len(parts) > 3:
+            p = _pos_of(parts[3])
+            if p:
+                return 3, p
+        for i in range(min(len(parts), 8)):
+            if i == 3:
+                continue
+            p = _pos_of(parts[i])
+            if p:
+                return i, p
+        return None
+
+    def _extract(parts: list[str]) -> dict | None:
+        """ID FORM LEMMA UPOS ... HEAD DEPREL — 7–10 oszlopos CoNLL-U.
+
+        A HEAD az UPOS utáni első tiszta egész számú oszlop, a DEPREL az
+        utána következő kisbetűs kapcsolat. Így a 10 oszlopos
+        (XPOS+FEATS+DEPS+MISC), a 9 oszlopos (XPOS nélküli) és a 7 oszlopos
+        (csak FEATS) válasz is helyesen parse-ol — a korábbi `parts[6]` fix a
+        7–9 oszlopos válaszokon elcsúszott, és a HEAD/DEPREL 0 lett.
+
+        Az UPOS oszlopát is robusztusan keressük (lásd `_find_upos`): a modell
+        gyakran beszúr egy extra FORM-ot a LEMMA után, amitől a fix 4. index
+        félrement (a teljes sort eldobtuk → UPOS 0). Az ID oszlop szintén
+        elcsúszhat (nincs ID oszlop, vagy a 2. helyen van) — a HEAD előtti
+        első egész a token sorszáma; ha nincs, a sor pozíciója az ID (lásd a
+        hívó oldali ID-javítást).
+        """
+        if len(parts) < 5:
+            return None
+        found = _find_upos(parts)
+        if not found:
+            return None
+        upos_idx, upos = found
+        head_idx = None
+        for i in range(upos_idx + 1, len(parts)):
+            if parts[i].strip().isdigit():
+                head_idx = i
+                break
+        if head_idx is None:
+            return None
+        deprel = None
+        for i in range(head_idx + 1, len(parts)):
+            v = (parts[i] or "").strip()
+            if v and re.match(r"^[a-z][a-z:]*$", v):
+                deprel = v
+                break
+        if deprel is None:
+            return None
+        # a token ID: az UPOS előtti első egész oszlop (a HEAD már később van)
+        token_id = None
+        for i in range(upos_idx):
+            v = (parts[i] or "").strip()
+            if v.isdigit():
+                token_id = v
+                break
+        return {
+            "id": token_id,
+            "upos": upos,
+            "head": parts[head_idx].strip(),
+            "deprel": deprel,
+        }
+
     pred_tokens = []
+    pos = 0
     for line in lines:
         line = line.strip()
-        if not line or line.startswith("#"):
+        if not line or line.startswith("#") or line.startswith("```"):
             continue
-        parts = line.split("\t")
-        if len(parts) >= 8 and parts[0].isdigit() and re.match(r"^[A-Z][A-Z0-9_-]*$", parts[3]):
-            pred_tokens.append({
-                "id": parts[0],
-                "upos": parts[3],
-                "head": parts[6],
-                "deprel": parts[7],
-            })
+        # tabulátoros CoNLL-U (a leggyakoribb), majd whitespace-es változat
+        tok = _extract(line.split("\t"))
+        if tok is None:
+            tok = _extract(line.split())
+        if tok:
+            # ha nincs ID oszlop, a sor pozíciója a token sorszáma
+            pos += 1
+            if tok.get("id") is None:
+                tok["id"] = str(pos)
+            pred_tokens.append(tok)
             continue
+        # szabad szöveges / listás formátumok
         m = re.match(
             r"(\d+)\s+\S+\s+\S+\s+([A-Z][A-Z0-9_-]*)\s+\S+\s+\S+\s+(\d+)\s+(\S+)",
             line
@@ -138,7 +252,8 @@ def run_benchmark(model: str, limit: int | None, reset: bool,
                   results_dir: Path, state_dir: Path, mode: str = "nothink",
                   backend: str = "ollama",
                   base_url: str = DEFAULT_OPENAI_BASE_URL,
-                  api_key: str = DEFAULT_OPENAI_API_KEY) -> int:
+                  api_key: str = DEFAULT_OPENAI_API_KEY,
+                  num_predict: int | None = None) -> int:
     if mode not in ("think", "nothink"):
         raise ValueError(f"ismeretlen mode: {mode}")
     think = (mode == "think")
@@ -201,35 +316,62 @@ def run_benchmark(model: str, limit: int | None, reset: bool,
             for i, item in enumerate(items):
                 if item["id"] in completed_set:
                     continue
-                try:
-                    if backend == "openai":
-                        response = call_openai_strict(
-                            item["prompt"], model,
-                            think=think,
-                            num_predict=(8192 if think else 4096),
-                            timeout=(600 if think else 300),
-                            max_retries=(2 if think else 3),
-                            base_url=base_url,
-                            api_key=api_key,
-                        )
-                    else:
-                        response = call_ollama_strict(
-                            item["prompt"], model,
-                            think=think,
-                            num_predict=(8192 if think else 4096),
-                            timeout=(600 if think else 300),
-                            max_retries=(2 if think else 3),
-                        )
-                    raw = response.get("response", "").strip()
-                except FatalBackendError as e:
-                    cp.mark_stopped(str(e))
-                    elapsed = time.time() - start
-                    done = len(cp.state["completed_ids"])
-                    print(f"\n⛔ STOP @ item {i}/{total}: {e}")
+                raw = ""
+                degen_tries = 0
+                while True:
+                    # Az első kérés a num_predict plafonnal fut (alapértelmezetten
+                    # 32k; --num-predict -1 -> a modell saját max output korlátja
+                    # a plafon, azaz nincs mesterséges kimeneti korlát). Az
+                    # újrapróbálkozások rövidebb plafonnal futnak
+                    # (DEGENERATE_RETRY_MAX_TOKENS), hogy a loop hamarabb
+                    # vágódjon le.
+                    cap = num_predict if degen_tries == 0 else DEGENERATE_RETRY_MAX_TOKENS
+
+                    try:
+                        if backend == "openai":
+                            response = call_openai_strict(
+                                item["prompt"], model,
+                                think=think,
+                                num_predict=cap,
+                                timeout=(3600 if think else 900),
+                                max_retries=(2 if think else 3),
+                                base_url=base_url,
+                                api_key=api_key,
+                            )
+                        else:
+                            response = call_ollama_strict(
+                                item["prompt"], model,
+                                think=think,
+                                num_predict=cap,
+                                timeout=(3600 if think else 900),
+                                max_retries=(2 if think else 3),
+                            )
+                        raw = response.get("response", "").strip()
+                    except FatalBackendError as e:
+                        cp.mark_stopped(str(e))
+                        elapsed = time.time() - start
+                        done = len(cp.state["completed_ids"])
+                        print(f"\n⛔ STOP @ item {i}/{total}: {e}")
+                        LOG_PATH.parent.mkdir(parents=True, exist_ok=True)
+                        with LOG_PATH.open("a", encoding="utf-8") as f:
+                            f.write(f"{log_line} | FAILED @ {done}/{total} | stop_reason={e}\n")
+                        return 1
+
+                    # Degenerált (token-loopos) generáció: a modell a 32k
+                    # contextet tölti fel ismétlődő számsorral/szósorral. Ez
+                    # mintafüggő, ezért a hibás generációt újrakérjük (bounded
+                    # retry) — a mérés így a képességet mutatja, nem a szerver
+                    # sampling-artefaktumát. A stop-policy érintetlen: a
+                    # retry csak sikeres válasz után, degeneráció esetén fut.
+                    if not is_degenerate(raw) or degen_tries >= DEGENERATE_RETRIES:
+                        break
+                    degen_tries += 1
+                    print(f"  ⚠️  [{item['id']}] degenerált válasz ({len(raw)} char) "
+                          f"→ újrapróbálkozás {degen_tries}/{DEGENERATE_RETRIES}")
                     LOG_PATH.parent.mkdir(parents=True, exist_ok=True)
                     with LOG_PATH.open("a", encoding="utf-8") as f:
-                        f.write(f"{log_line} | FAILED @ {done}/{total} | stop_reason={e}\n")
-                    return 1
+                        f.write(f"{log_line} | DEGENERATE @ {item['id']} "
+                                f"len={len(raw)} retry={degen_tries}\n")
 
                 # Parse CoNLL-U from response
                 parsed = parse_conllu_from_response(raw, item["tokens"])
@@ -249,6 +391,7 @@ def run_benchmark(model: str, limit: int | None, reset: bool,
                     "uas": round(head_acc, 4),
                     "las": round(deprel_acc, 4),
                     "parsed_tokens": parsed,
+                    "degenerate_retries": degen_tries,
                     "mode": mode,
                     "backend": backend,
                 }, ensure_ascii=False) + "\n")
@@ -325,6 +468,10 @@ def main() -> int:
     p.add_argument("--api-key", default=DEFAULT_OPENAI_API_KEY,
                    help="OpenAI backend esetén a Bearer token "
                         "(Ollama esetén tetszőleges, default: 'ollama')")
+    p.add_argument("--num-predict", type=int, default=None,
+                   help="Max generált token az első kérésre. Default: modell szerint "
+                        "(Ollama Cloud: nincs plafon / a modell saját max outputja; "
+                        "lokális: 32768). -1 = kényszerű nincs plafon.")
     args = p.parse_args()
 
     if args.status:

@@ -72,6 +72,9 @@ def parse_conllu_from_response(text: str, gold_tokens: list[dict]) -> dict | Non
 
 
 def call_with_stream(model: str, prompt: str, base_url: str, max_time: int = MAX_TIME) -> dict:
+    # Sampling paramétert nem küldünk (se temperature, se top_p/top_k/min_p):
+    # a backend defaultja. A "temperature: 0" greedy dekódolás token-loopokat
+    # generált a lokális modelleknél.
     try:
         resp = requests.post(
             f"{base_url}/chat/completions",
@@ -81,8 +84,7 @@ def call_with_stream(model: str, prompt: str, base_url: str, max_time: int = MAX
                     {"role": "system", "content": "You are a linguistic expert. Answer in Hungarian."},
                     {"role": "user", "content": prompt},
                 ],
-                "temperature": 0.0,
-                "max_tokens": 65536,
+                "max_tokens": 32768,
                 "stream": True,
             },
             stream=True,

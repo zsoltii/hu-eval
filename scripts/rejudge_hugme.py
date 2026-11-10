@@ -25,7 +25,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
-from stop_on_error import call_ollama_strict, OllamaFatalError
+from stop_on_error import call_ollama_strict, OllamaFatalError, MAX_OUTPUT_TOKENS
 from judge_hugme import METRICS, METRIC_RUBRICS, JUDGE_PROMPT_TEMPLATE, JUDGE_MODEL, LOG_PATH
 
 ROOT = Path(__file__).parent.parent
@@ -41,9 +41,20 @@ def judge_one(prompt: str, response: str, metric: str, rubric: str) -> float | N
     try:
         resp = call_ollama_strict(
             judge_prompt, JUDGE_MODEL,
-            num_predict=24, timeout=180, max_retries=3,
+            num_predict=None, timeout=180, max_retries=3,
         )
         raw = resp.get("response", "").strip()
+        # Lépcsőzetes kivonat (a 32k plafon mellett a bíró hosszabban/rendetlenül
+        # is válaszolhat): (1) önálló szám egy sorban, (2) első tizedes szám,
+        # (3) első egész szám.
+        m = re.search(r"(?m)^\s*(0?\.\d|0\.0|1\.0|0|1)\s*$", raw)
+        if m:
+            try:
+                val = float(m.group(1))
+                if 0.0 <= val <= 1.0:
+                    return val
+            except ValueError:
+                pass
         m = re.search(r"([0-9]\.[0-9])", raw)
         if m:
             return max(0.0, min(1.0, float(m.group(1))))

@@ -8,3 +8,6 @@ state/
 __pycache__/
 *.pyc
 /.idea/
+
+# uv venv (conda nélküli gépeken, Python 3.11)
+.venv/

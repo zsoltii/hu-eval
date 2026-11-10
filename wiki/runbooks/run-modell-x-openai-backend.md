@@ -3,7 +3,7 @@
 *Típus:* runbook
 *Forrás(ok):* [OpenAI-kompatibilis backend támogatása](../concepts/openai-backend-support.md), [Setup környezet](setup-kornyezet.md), belső projekt (2026-07-19)
 *Létrehozva:* 2026-07-19
-*Frissítve:* 2026-07-19
+*Frissítve:* 2026-10-17 (bíró modell: deepseek-v4-pro:0813-cloud; korábban 2026-07-19)
 
 ---
 
@@ -98,7 +98,7 @@ A futtatás **stop-on-error + resume**: ha bármi hiba történik (timeout, rate
 
 ### 4. Judge hívás (generatív benchmarkok után)
 
-A HuGME és MT-Bench-HU **bíró modellt** igényelnek — a bíró a `deepseek-v4-pro:cloud` (Ollama Cloud, 2026-07-19 óta hivatalos bíró). A bíró hívásához a `judge_hugme.py` / `judge_mt_bench.py` saját maga kezeli a backendet (alapértelmezetten ollama).
+A HuGME és MT-Bench-HU **bíró modellt** igényelnek — a bíró a `deepseek-v4-pro:0813-cloud` (Ollama Cloud, 2026-10-17 óta hivatalos bíró). A bíró hívásához a `judge_hugme.py` / `judge_mt_bench.py` saját maga kezeli a backendet (alapértelmezetten ollama).
 
 ```bash
 # HuGME judge

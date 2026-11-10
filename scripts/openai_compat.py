@@ -24,6 +24,7 @@ Használat:
 A válasz egy dict, amiben a "response" kulcs a generált szöveget tartalmazza —
 így a run_hulu.py hívókódja backend-független maradhat.
 """
+import os
 import time
 import random
 import requests
@@ -33,6 +34,7 @@ from stop_on_error import (
     FatalBackendError,
     NO_RETRY_CODES,
     RETRYABLE_CODES,
+    MAX_OUTPUT_TOKENS,
 )
 
 
@@ -48,7 +50,7 @@ def call_openai_strict(
     base_url: str = "http://localhost:11434/v1",
     api_key: str = "ollama",
     think: bool = False,
-    num_predict: int = 4096,
+    num_predict: int | None = None,
 ) -> dict:
     """
     OpenAI-kompatibilis /v1/chat/completions hívás, ami az első
@@ -61,12 +63,29 @@ def call_openai_strict(
       - api_key: Bearer token. Ollama esetén tetszőleges érték (pl. "ollama").
       - think: Ollama OpenAI-endpointján a gondolkodás az extra_body["think"]
         mezőn keresztül megy. Más backend figyelmen kívül hagyhatja.
-      - num_predict: maximális generált token (Ollama options.max_tokens).
+      - num_predict: maximális generált token. **Alapértelmezés: 32 768 (32k)** —
+        a projektben minden futásra ez a plafon. A backend a saját contextjéhez
+        igazítja: a prompt + a generált válasz együtt belefér a contextbe, vagyis
+        a kérdés és a válasz is belefér a 32k-ba.
+        A `-1` jelentése "korlátlan": ilyenkor a max_tokens mezőt egyáltalán nem
+        küldjük, mert az OpenAI-kompatibilis végpontok a -1-et elutasíthatják.
+
+    **Sampling:** a kérés szándékosan nem tartalmaz `temperature`/`top_p`/
+    `top_k`/`min_p`/`repeat_penalty` mezőket — minden backend (Ollama,
+    llama-server, vLLM, TGI, …) a saját defaultját alkalmazza. Ok: a korábbi
+    `temperature: 0.0` (greedy) dekódolás a lokális modelleknél repetitív
+    token-loopokat generált (a UD Hungarian futásban 139/449 item, 31%).
     """
     url = base_url.rstrip("/")
     if not url.endswith("/v1"):
         url = url + "/v1"
     endpoint = f"{url}/chat/completions"
+
+    # BENCH_NO_TIMEOUT=1: a helyi llama-server hívásoknál nincs időkorlát
+    # (a felhasználó kérésére). Cloud judge-oknál az env nincs beállítva,
+    # így azok megtartják a saját timeoutjukat.
+    if os.environ.get("BENCH_NO_TIMEOUT") == "1":
+        timeout = None
 
     headers = {
         "Authorization": f"Bearer {api_key}",
@@ -75,13 +94,23 @@ def call_openai_strict(
     payload = {
         "model": model,
         "messages": [{"role": "user", "content": prompt}],
-        "temperature": 0.0,
         "stream": False,
-        "max_tokens": num_predict,
     }
-    # Ollama OpenAI-endpoint: think mód az extra_body-n keresztül
-    if think:
-        payload["extra_body"] = {"think": True}
+    # Sampling paramétert NEM küldünk (se temperature, se top_p/top_k/min_p/
+    # repeat_penalty): a backend saját defaultját használjuk. A "temperature: 0"
+    # greedy dekódolás a lokális modelleknél degenerált ciklusokba (token loop)
+    # futott — ez volt a UD Hungarian 31%-os loop-arányának oka.
+    if num_predict is None:
+        # Ollama Cloud: nincs plafon; lokális: 32k (2026-11-04-i szabály)
+        num_predict = -1 if model.endswith(":cloud") else MAX_OUTPUT_TOKENS
+    # negatív num_predict = korlátlan: a max_tokens mezőt elhagyjuk
+    if num_predict >= 0:
+        payload["max_tokens"] = num_predict
+    # A think flaget MINDIG explicit küldjük (true VAGY false) — nem bízunk
+    # a backend defaultjára. Ollama OpenAI-endpoint: extra_body.think;
+    # llama-server: chat_template_kwargs.enable_thinking.
+    payload["extra_body"] = {"think": bool(think)}
+    payload["chat_template_kwargs"] = {"enable_thinking": bool(think)}
 
     for attempt in range(max_retries + 1):
         try:

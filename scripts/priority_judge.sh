@@ -1,5 +1,5 @@
 #!/bin/bash
-# priority_judge.sh — A gemini-3-flash-preview bíró megszűnt (2026-07-14), helyette deepseek-v4-pro:cloud.
+# priority_judge.sh — A gemini-3-flash-preview bíró megszűnt (2026-07-14); helyette deepseek-v4-pro:0813-cloud (2026-10-17 óta, korábban deepseek-v4-pro:cloud).
 # Ez a script ELŐSZÖR a bíró-igényes feladatokat futtatja (HuGME, MT-Bench rejudge),
 # CSAK UTÁNA az UD refuttatást.
 
@@ -9,17 +9,26 @@ LOG_DIR="./logs"
 PROJ="."
 
 cd "$PROJ"
-source "$HOME/anaconda3/etc/profile.d/conda.sh"
-conda activate eval-hu
 
-echo "$(date): priority_judge indítása (bíró: deepseek-v4-pro:cloud)"
+# Python környezet aktiválása: conda eval-hu (eredeti gépi konvenció) VAGY projekt .venv.
+if [ -f "$HOME/anaconda3/etc/profile.d/conda.sh" ]; then
+    source "$HOME/anaconda3/etc/profile.d/conda.sh"
+    conda activate eval-hu
+elif [ -f ".venv/bin/activate" ]; then
+    source .venv/bin/activate
+else
+    echo "❌ Nincs elérhető Python környezet (conda eval-hu vagy .venv)." >&2
+    exit 1
+fi
+
+echo "$(date): priority_judge indítása (bíró: deepseek-v4-pro:0813-cloud)"
 echo "  Prioritás: HuGME rejudge → MT-Bench rejudge → UD refuttatás"
 echo ""
 
 # 1. HuGME rejudge — 22 modell × 299 item × 6 metrika = 39 468 bíró hívás
 #    Becsült idő: ~22 ó (22 modell × 60p)
 echo "════════════════════════════════════════════════════"
-echo "  [1/3] HuGME rejudge (deepseek-v4-pro:cloud)"
+echo "  [1/3] HuGME rejudge (deepseek-v4-pro:0813-cloud)"
 echo "════════════════════════════════════════════════════"
 if [ -f "$LOG_DIR/priority_hugme_done" ]; then
     echo "  ⏭️  Már kész (marker fájl: $LOG_DIR/priority_hugme_done) — átugrás"
@@ -33,7 +42,7 @@ fi
 # 2. MT-Bench rejudge — 22 modell × 24 item × 3 baseline × 4 GSB hívás = 6 336 bíró hívás
 #    Becsült idő: ~1.3 ó (20 modell × 4p)
 echo "════════════════════════════════════════════════════"
-echo "  [2/3] MT-Bench rejudge (deepseek-v4-pro:cloud, multi-baseline)"
+echo "  [2/3] MT-Bench rejudge (deepseek-v4-pro:0813-cloud, multi-baseline)"
 echo "════════════════════════════════════════════════════"
 if [ -f "$LOG_DIR/priority_mt_bench_done" ]; then
     echo "  ⏭️  Már kész (marker fájl: $LOG_DIR/priority_mt_bench_done) — átugrás"
@@ -97,7 +106,11 @@ echo "$(date): UD refuttatás kész" >> "$LOG_DIR/priority_judge.log"
 echo "════════════════════════════════════════════════════"
 echo "  [4/4] Státusz táblázat frissítése"
 echo "════════════════════════════════════════════════════"
-python3 /tmp/opencode/build_status_table.py
+if [ -f /tmp/opencode/build_status_table.py ]; then
+    python3 /tmp/opencode/build_status_table.py
+else
+    echo "⏭️  /tmp/opencode/build_status_table.py nem elérhető — státusz táblázat kihagyva"
+fi
 
 # Végső log
 echo "$(date): priority_judge kész" >> "$LOG_DIR/priority_judge.log"

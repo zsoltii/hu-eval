@@ -82,9 +82,12 @@ _register_benchmarks()
 def collect_per_task(jsonl_path: Path, config) -> dict[str, dict]:
     """Visszatér: {task: {'correct': N, 'total': N, 'acc': 0-1}}.
 
-    Duplikátumok: az utolsó előfordulás számít (id alapján).
+    Duplikátumok: az utolsó előfordulás számít. A dedup-kulcs az
+    (subject, id) pár, ha van `subject` mező — a MMLU-HU id-jei ugyanis
+    NEM globálisak: ugyanaz az id (pl. `mmlu_hu_val_2`) minden tantárgyban
+    létezik, ezért a csak id-alapú dedup a teljes MMLU-t 61 sorra omlasztaná.
     """
-    by_id: dict[str, dict] = {}
+    by_id: dict[tuple | str, dict] = {}
     for line_no, line in enumerate(jsonl_path.open(encoding="utf-8"), start=1):
         rec = json.loads(line)
         rec_id = rec.get("id")
@@ -92,30 +95,44 @@ def collect_per_task(jsonl_path: Path, config) -> dict[str, dict]:
             raise ValueError(
                 f"{jsonl_path}:{line_no}: missing 'id' field — cannot deduplicate"
             )
-        by_id[rec_id] = rec
+        key = (rec.get("subject"), rec_id) if rec.get("subject") else rec_id
+        by_id[key] = rec
 
     per_task: dict[str, dict] = {}
+    mmlu_subjects = getattr(config, "TASKS_MMLU", None)
     for rec in by_id.values():
         t = rec.get("task")
+        # MMLU-HU: a `task` mező a benchmark neve ("mmlu_hu"), a tantárgy a
+        # `subject` mezőben van → a subject a sub-task kulcs.
+        if mmlu_subjects and rec.get("subject") in mmlu_subjects:
+            t = rec["subject"]
         if t and t in (config.TASK_LABELS if hasattr(config, 'TASK_LABELS') else config.TASKS_UAS):
             bucket = per_task.setdefault(t, {"correct": 0, "total": 0})
             bucket["total"] += 1
             if rec.get("correct"):
                 bucket["correct"] += 1
-        elif hasattr(config, 'TASKS_UAS') and not t:
-            # UD Hungarian: no 'task' field, three score fields per sentence
+        elif hasattr(config, "TASKS_UAS") and (t is None or t == "ud_hungarian"):
+            # UD Hungarian: mondatonként három 0-1 közötti metrika. A metrika
+            # NEM bináris, ezért a float értékeket összegezzük (a régi kód
+            # "correct" számlálóként kezelte, ami minden >0 értéket 1-nek vett).
             for metric in config.TASKS_UAS:
                 val = rec.get(metric)
+                if val is None and metric == "upos":
+                    val = rec.get("upos_accuracy")
                 if val is not None:
-                    bucket = per_task.setdefault(metric, {"correct": 0, "total": 0})
+                    bucket = per_task.setdefault(
+                        metric, {"correct": 0, "total": 0, "sum": 0.0}
+                    )
                     bucket["total"] += 1
-                    if val:
-                        bucket["correct"] += 1
+                    bucket["sum"] += float(val)
         else:
             continue
 
     for t, b in per_task.items():
-        b["acc"] = b["correct"] / b["total"] if b["total"] else 0.0
+        if "sum" in b:
+            b["acc"] = b["sum"] / b["total"] if b["total"] else 0.0
+        else:
+            b["acc"] = b["correct"] / b["total"] if b["total"] else 0.0
     return per_task
 
 
@@ -429,10 +446,9 @@ def build_ud_hungarian(rows: list[dict], config, args):
         for r in rows:
             out = {}
             for k, v in r.items():
-                if isinstance(v, float):
-                    out[k] = f"{v:.4f}"
-                else:
-                    out[k] = v
+                if k not in fieldnames:
+                    continue  # UD: az 'overall' == 'composite', nincs külön oszlop
+                out[k] = f"{v:.4f}" if isinstance(v, float) else v
             w.writerow(out)
 
     # Markdown
@@ -508,9 +524,9 @@ def main() -> int:
     args.out.mkdir(parents=True, exist_ok=True)
 
     config = BENCH_CONFIGS[args.benchmark]
-    if hasattr(config, 'TASKS'):
+    if getattr(config, "TASKS", None):
         tasks = config.TASKS
-    elif hasattr(config, 'TASKS_MMLU'):
+    elif getattr(config, "TASKS_MMLU", None):
         tasks = config.TASKS_MMLU
     else:
         tasks = config.TASKS_UAS
@@ -528,7 +544,7 @@ def main() -> int:
         if not per_task:
             continue
         comp = composite_acc(per_task, tasks)
-        if hasattr(config, 'TASKS_UAS') and not hasattr(config, 'TASKS'):
+        if hasattr(config, 'TASKS_UAS') and not getattr(config, 'TASKS', None):
             # UD: nincs 'overall', mert a 3 metrika egyenlő súlyú
             overall_val = comp
         else:

@@ -3,7 +3,7 @@
 *Típus:* comparison
 *Forrás(ok):* Ollama dokumentáció, modell árlisták (Q1 2026), háztartási áramköltség HU (~40 HUF/kWh), projekt belső, [OpenAI-kompatibilis backend](../concepts/openai-backend-support.md) (2026-07-19)
 *Létrehozva:* 2026-06-06
-*Frissítve:* 2026-07-19
+*Frissítve:* 2026-10-17 (bíró modell: deepseek-v4-pro:0813-cloud; korábban 2026-07-19)
 
 ---
 
@@ -40,7 +40,7 @@ Az alábbi számok **nagyságrendi becslések**, nem pontos árak. A cél az ös
 | Pro / Flagship | `minimax-m3`, `deepseek-v4-pro` | 2-15 | Legjobb minőség, legdrágább |
 | Flash / Mini | `gemini-3-flash-preview` | 0.1-0.5 | 5-10x olcsóbb, kisebb minőségveszteség |
 | Ultra-large | `qwen3.5:cloud` | 5-30 | Csak nagyon nehéz feladatra éri meg |
-| Bírószintű | `deepseek-v4-pro:cloud` (hivatalos bíró 2026-07-19 óta) | 1-5 | LLM-as-a-Judge hívásokra; a `gemini-3-flash-preview:latest` megszűnt 2026-07-14 |
+| Bírószintű | `deepseek-v4-pro:0813-cloud` (hivatalos bíró 2026-10-17 óta) | 1-5 | LLM-as-a-Judge hívásokra; a `gemini-3-flash-preview:latest` megszűnt 2026-07-14 |
 
 ### Lokális költségek
 
@@ -188,8 +188,8 @@ A projekt kontextusában (értékelés, riportkészítés):
 
 - **Alapértelmezett versenyző modellek** — `minimax-m3:cloud` (kiindulási pont)
 - **Lokális baseline** — `qwen3.5:4b` (a legjobb ár/teljesítmény arány lokálisan)
-- **Bíró modell — `deepseek-v4-pro:cloud` (hivatalos bíró 2026-07-19 óta; a `gemini-3-flash-preview:latest` megszűnt 2026-07-14, a kimi bíró státusza törölve 2026-06-07, v1.2.4)
-- **Gyors smoke test** — `deepseek-v4-pro:cloud` (olcsó, gyors, "elég jó"; a gemini-3-flash-preview megszűnt)
+- **Bíró modell — `deepseek-v4-pro:0813-cloud` (hivatalos bíró 2026-10-17 óta, korábban `deepseek-v4-pro:cloud`; a `gemini-3-flash-preview:latest` megszűnt 2026-07-14, a kimi bíró státusza törölve 2026-06-07, v1.2.4)
+- **Gyors smoke test** — `deepseek-v4-pro:0813-cloud` (olcsó, gyors, "elég jó"; a gemini-3-flash-preview megszűnt)
 
 ### Lokális benchmark-modell (2026-07-19, első a projektben)
 
@@ -207,6 +207,32 @@ A projekt kontextusában (értékelés, riportkészítés):
 - **OpenAI-backend konvenció:** lásd [Concept: OpenAI-kompatibilis backend](../concepts/openai-backend-support.md) és a [riport-template Modell-kvantálás + Backend oszlop](riport-template.md#modell-kvantálás)
 
 Ez az első alkalom, hogy a projekt **lokális modellt** is felvett a modell-poolba. A korábbi BASELINE riport (2026-07-14) kizárólag `ollama-cloud` (`:cloud` végződésű) modelleket tartalmazott — a mostani riport ezt egészíti ki egy lokális referenciával, a cloud/lokális összehasonlíthatóság első mérőszámaként.
+
+### Lokális benchmark-modell (2026-10-24, Qwen3.5-9B-MTP)
+
+- **Modell:** `unsloth/Qwen3.5-9B-MTP-GGUF:UD-Q4_K_XL` (Unsloth Dynamic 2.0 GGUF, ~4 bit, MTP speculative decoding)
+- **Architektúra:** Qwen 3.5 dense transformer, 9B paraméter
+- **Backend:** lokális **llama-server** `http://localhost:8080/v1` (OpenAI-kompatibilis), `-c 32000 --parallel 1`
+- **Kvantálás:** `UD-Q4_K_XL` — a riportban a **Backend** oszlop `openai`, a kvantálás `UD-Q4_K_XL`
+- **Mód:** **csak nothink** (felhasználói döntés, 2026-10-23: „nem mérünk think-et"); a llama-server `reasoning_format: none` + explicit `chat_template_kwargs.enable_thinking=false` mellett nem gondolkodik
+- **Módszertan:** nincs sampling paraméter a kérésben (a backend defaultja érvényesül), 32 768 tokenes kimeneti plafon; a UD-n degeneráció-detektor + max. 2 újrapróbálkozás
+- **Eredmény:** composite **0,5345** (8. hely); HuLU 70,21%, MMLU 65,53%, HuGME 0,7203 (faithfulness 0,260), MT-Bench 0,3958, UD UPOS 32,56% / UAS 15,75% / LAS 11,43%
+- **Riport:** [report-2026-10-24.md](../reports/report-2026-10-24.md); entitás: [qwen3.5-9b-mtp-lokalis.md](../entities/qwen3.5-9b-mtp-lokalis.md)
+
+**Cloud vs. lokális tanulság (2026-10-24):** a 9B lokális modell a statisztikai benchmarkokon (HuLU 70,2%; MMLU 65,5%) a cloud mezőny alatt van, de **nem szakad le**: a HuLU-n a minimax nothink mögött csak −2,0 pt, és a **HuWNLI sub-taskon a mezőny legjobbja** (60,0%). A szabad szöveges generálásban (HuGME 0,72 vs 0,87–0,94) és a UD fej/reláció-predikcióban (UAS 0,158 vs 0,451–0,825) viszont nagy a szakadék. A **faithfulness 0,26** arra utal, hogy a kis modell a legnagyobb kockázatot a tényhűségben hordozza, nem a stílusban.
+
+### Think vs. nothink a cloud éllovasnál (2026-10-27)
+
+A `muse-spark-open:cloud` think körének lezárása után a kép:
+
+| Dimenzió | nothink | think | Δ |
+|---|---|---|---|
+| STAT (HuLU + MMLU) | 0,842 | 0,852 | +0,010 |
+| GEN (HuGME + MT-Bench) | 0,734 | 0,738 | +0,004 |
+| LING (UD) | 0,785 | 0,788 | +0,003 |
+| **Composite** | **0,7876** | **0,7937** | **+0,006** |
+
+**Tanulság:** a gondolkodás a cloud éllovasnál is **gyakorlatilag nulla hozadék** (+0,6 pt composite), sőt a HuCB-n érdemben ront (−7,8 pt). Ez megerősíti, hogy a think mód mérése a projektben elsősorban **módszertani kontroll**, nem extra pontforrás — a nem-think futás a gyakorlati döntésekhez elegendő. Riport: [report-2026-10-27.md](../reports/report-2026-10-27.md).
 
 ## Kapcsolódó
 

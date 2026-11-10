@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-judge_mt_bench.py — MT-Bench-HU válaszok pontozása deepseek-v4-pro:cloud bíróval.
+judge_mt_bench.py — MT-Bench-HU válaszok pontozása deepseek-v4-pro:0813-cloud bíróval.
 
 GSB (Good/Same/Bad) pairwise összehasonlítás egy baseline modellhez képest.
 A judge.overall = win rate (0-1).
@@ -12,15 +12,16 @@ Használat:
 import argparse
 import json
 import os
+import re
 import sys
 import time
 from datetime import datetime, timezone
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
-from stop_on_error import call_ollama_strict, OllamaFatalError
+from stop_on_error import call_ollama_strict, OllamaFatalError, MAX_OUTPUT_TOKENS
 
-JUDGE_MODEL = "deepseek-v4-pro:cloud"
+JUDGE_MODEL = "deepseek-v4-pro:0813-cloud"
 BASELINE_MODEL = "deepseek-v4-flash:cloud"  # default baseline
 DEFAULT_RESULTS_DIR = Path("./results")
 LOG_PATH = Path("./logs/mt_bench_judge.log")
@@ -46,15 +47,30 @@ def gsb_judge(question: str, response_a: str, response_b: str,
     ra, rb = (response_b, response_a) if swap else (response_a, response_b)
     prompt = JUDGE_PROMPT_TEMPLATE.format(question=q, response_a=ra, response_b=rb)
     try:
-        resp = call_ollama_strict(prompt, JUDGE_MODEL, num_predict=8, timeout=120, max_retries=1)
+        resp = call_ollama_strict(prompt, JUDGE_MODEL, num_predict=None, timeout=120, max_retries=1)
         raw = resp.get("response", "").strip().upper()
-        for ch in raw:
-            if ch in ("A", "B", "S"):
-                # Ha swap volt, fordítva értelmezzük
-                if swap:
-                    return {"A": "B", "B": "A", "S": "S"}[ch]
-                return ch
-        return None
+        # A bíró a 32k plafon mellett is "rendetlenül" válaszolhat, ezért a
+        # kivonat lépcsőzetes: (1) önálló betű egy sorban, (2) önálló betű
+        # szövegen belül, (3) az első A/B/S karakter.
+        ch = None
+        m = re.search(r"(?m)^\s*([ABS])\s*$", raw)
+        if m:
+            ch = m.group(1)
+        if ch is None:
+            m = re.search(r"\b([ABS])\b", raw)
+            if m:
+                ch = m.group(1)
+        if ch is None:
+            for c in raw:
+                if c in ("A", "B", "S"):
+                    ch = c
+                    break
+        if ch is None:
+            return None
+        # Ha swap volt, fordítva értelmezzük
+        if swap:
+            return {"A": "B", "B": "A", "S": "S"}[ch]
+        return ch
     except OllamaFatalError:
         return None
 
@@ -73,10 +89,10 @@ def generate_baseline(model: str, mode: str, questions: list[dict],
     for item in questions:
         try:
             r1 = ollama_call(item["turn1_prompt"], model,
-                             num_predict=4096, timeout=120, max_retries=2)
+                             num_predict=None, timeout=900, max_retries=2)
             t1 = r1.get("response", "").strip()
             conv = f"{item['turn1_prompt']}\n\nVálaszom: {t1}\n\n{item['turn2_followup']}"
-            r2 = ollama_call(conv, model, num_predict=4096, timeout=120, max_retries=2)
+            r2 = ollama_call(conv, model, num_predict=None, timeout=900, max_retries=2)
             t2 = r2.get("response", "").strip()
         except OllamaFatalError:
             print(f"   ⚠️ Baseline sikertelen: {item['id']}")

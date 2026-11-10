@@ -36,11 +36,15 @@ python_running() {
 
 # Restart helper
 restart_priority() {
-    log "🔄 priority_judge.sh újraindítása (háttérben, nohup, conda eval-hu)"
+    log "🔄 priority_judge.sh újraindítása (háttérben, nohup)"
     nohup bash -c "
-        source "$HOME/anaconda3/etc/profile.d/conda.sh"
-        conda activate eval-hu
         cd "$PROJ"
+        if [ -f "$HOME/anaconda3/etc/profile.d/conda.sh" ]; then
+            source "$HOME/anaconda3/etc/profile.d/conda.sh"
+            conda activate eval-hu
+        elif [ -f ".venv/bin/activate" ]; then
+            source .venv/bin/activate
+        fi
         bash scripts/priority_judge.sh
     " >> "$LOG_DIR/priority_judge.log" 2>&1 &
     disown

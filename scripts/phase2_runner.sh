@@ -2,6 +2,19 @@
 set -u
 cd "$(dirname "$0")/.."
 
+# Python interpreter feloldása: PYTHON env > conda eval-hu > projekt .venv.
+# A conda az eredeti gépi konvenció; a .venv a uv-alapú környezet conda nélküli gépeken.
+if [ -n "${PYTHON:-}" ]; then
+  PYTHON_BIN="$PYTHON"
+elif [ -x "$HOME/anaconda3/envs/eval-hu/bin/python" ]; then
+  PYTHON_BIN="$HOME/anaconda3/envs/eval-hu/bin/python"
+elif [ -x ".venv/bin/python" ]; then
+  PYTHON_BIN=".venv/bin/python"
+else
+  echo "❌ Nincs elérhető Python interpreter (conda eval-hu vagy .venv)." >&2
+  exit 1
+fi
+
 WAIT_PID_FILE="logs/queue_runner.pid"
 QUEUE_LOG="logs/queue_runner_$(date +%Y%m%d_%H%M).log"  # placeholder, figyeljük a PID fájlt
 
@@ -65,7 +78,7 @@ for MODEL in "${MODELS[@]}"; do
   echo "$(date) - $MODEL (think): indítás (RESUME ha van checkpoint)" | tee -a "$PHASE2_LOG"
   TS=$(date +%Y%m%d_%H%M)
   LOG="logs/hulu_${MODEL_SAFE}-think_phase2_${TS}.log"
-  $HOME/anaconda3/envs/eval-hu/bin/python scripts/run_hulu.py --model "$MODEL" --mode think > "$LOG" 2>&1
+  "$PYTHON_BIN" scripts/run_hulu.py --model "$MODEL" --mode think > "$LOG" 2>&1
   EXIT_CODE=$?
   if [ $EXIT_CODE -eq 0 ]; then
     echo "$(date) - $MODEL (think): KÉSZ" | tee -a "$PHASE2_LOG"

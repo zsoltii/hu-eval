@@ -1,0 +1,11 @@
+model,mode,composite,upos_acc,upos_n,uas_acc,uas_n,las_acc,las_n
+deepseek-v4.1-flash-cloud,think,0.8040,0.9168,449,0.8210,449,0.6743,449
+muse-spark-open-cloud,think,0.7876,0.8988,449,0.8276,449,0.6363,449
+muse-spark-open-cloud,nothink,0.7854,0.8971,449,0.8254,449,0.6337,449
+beam-cloud,think,0.7716,0.8797,449,0.8058,449,0.6293,449
+mistral-large-4-cloud,think,0.7398,0.8565,449,0.7601,449,0.6027,449
+minimax-m3.1-flash-cloud,think,0.6137,0.7428,449,0.6146,449,0.4837,449
+deepseek-v4.1-flash-cloud,nothink,0.5977,0.7830,449,0.4789,449,0.5314,449
+mistral-large-4-cloud,nothink,0.5861,0.7794,449,0.4506,449,0.5283,449
+minimax-m3.1-flash-cloud,nothink,0.5692,0.7216,449,0.5520,449,0.4341,449
+unsloth-Qwen3.5-9B-MTP-GGUF-UD-Q4_K_XL,nothink,0.1991,0.3256,449,0.1575,449,0.1143,449

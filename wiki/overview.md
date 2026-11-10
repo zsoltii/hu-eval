@@ -3,7 +3,7 @@
 *Típus:* concept
 *Forrás(ok):* [Karpathy LLM Wiki Method](../llm-wiki/karpathy-llm-wiki-method.md), [Ollama docs](https://github.com/ollama/ollama/blob/main/docs/api.md), NYTK HuLU, MMLU, MT-Bench
 *Létrehozva:* 2026-06-06
-*Frissítve:* 2026-07-15 (v1.3 — 11 modell × 2 mód × 5 benchmark kész, végleges baseline riport)
+*Frissítve:* 2026-10-17 (bíró modell: deepseek-v4-pro:0813-cloud; korábban 2026-07-15: v1.3 — 11 modell × 2 mód × 5 benchmark kész, végleges baseline riport)
 
 ---
 
@@ -45,7 +45,7 @@ A `Szerep` oszlop jelzi, hogy a modell benchmark-modell (saját maga futtatja a 
 | `gpt-oss:20b-cloud` | cloud | benchmark | leggyengőbb aktív (MMLU 46%) |
 | `qwen3.5:cloud` | cloud | benchmark | legerősebb HuLU (78.1% think) |
 | `qwen3-next:80b-cloud` | cloud | benchmark | ⚠️ RETIRED 2026-06-16 (HTTP 410) |
-| `gemini-3-flash-preview:latest` | cloud | **judge (megszűnt)** | bíró volt, megszűnt 2026-07-14. 09:00 CEST; helyette `deepseek-v4-pro:cloud` a hivatalos bíró (2026-07-19) |
+| `gemini-3-flash-preview:latest` | cloud | **judge (megszűnt)** | bíró volt, megszűnt 2026-07-14. 09:00 CEST; helyette `deepseek-v4-pro:0813-cloud` a hivatalos bíró (2026-10-17 óta; korábban `deepseek-v4-pro:cloud`) |
 
 ### Benchmark lista (v1.3)
 

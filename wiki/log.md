@@ -3,7 +3,7 @@
 *Típus:* concept
 *Forrás(ok):* belső projekt-napló
 *Létrehozva:* 2026-06-05
-*Frissítve:* 2026-07-28 (v1.6 — összevont riport: 11 cloud + 1 lokális modell)
+*Frissítve:* 2026-10-17 (v1.7.1 — bíró modell váltás: deepseek-v4-pro:cloud → deepseek-v4-pro:0813-cloud; korábban v1.7 — új gép setup: uv venv + corpora, conda nélkül)
 
 ---
 
@@ -744,3 +744,153 @@ A 4 újraindítási kísérlet (17:37, 17:44, 17:51, 17:56) után sem sikerült 
 - **Megjegyzés:** a HuGME és MT-Bench-HU eredmények skálái nem közvetlenül összehasonlíthatóak a cloud modellekkel (0–100% vs. 0–10% HuGME, single-baseline vs. multi-baseline MT-Bench). A STAT és LING dimenziók viszont közvetlenül összehasonlíthatóak.
 - **Git:** változtatások stagelve, commit kérésre.
 
+## 2026-10-17 (v1.7 — új gép setup: uv venv + corpora, conda nélkül)
+
+- **Trigger:** user kérése — új gépen (linux) még csak a git repo van clone-ozva; a Python környezet `uv`-val épüljön fel, a corpusok legyenek beállítva egy új teszteléshez.
+- **Végrehajtva (környezet):**
+  - `uv venv --python 3.11 .venv` (CPython 3.11.17, uv 0.13.1) + `uv pip install --python .venv/bin/python -r requirements.txt` → 43 csomag (requests, pandas 3.0.6, matplotlib 3.11.2, numpy 2.4.6, datasets 5.1.0).
+  - Mind az 5 runner + 2 judge + aggregator + segédmodulok importálhatók a `.venv`-ből.
+  - `.gitignore` kiegészítve `.venv/`-vel.
+- **Végrehajtva (corpora):** `mkdir -p data && cp -r datasets/* data/` (a `datasets/` 2026-07-19 óta a repo része); `python scripts/prepare_ud_v3.py` → `data/ud_hungarian/ud_hungarian_v4.jsonl` (449 mondat). Rekordszámok ellenőrizve: HuLU 2581, MMLU-HU 1880, HuGME 300, MT-Bench-HU 24, UD std 449, UD v4 449.
+- **Végrehajtva (scriptek):** a 6 shell orchestrator (`queue_runner.sh`, `queue_all_benchmarks.sh`, `phase2_runner.sh`, `post_followup.sh`, `priority_judge.sh`, `watchdog_priority.sh`) interpreter-feloldása: `PYTHON` env > conda `eval-hu` > projekt `.venv`; a `/tmp/opencode/build_status_table.py` helper hiányában a státusz-táblázat lépés kihagyva (nem része a repónak). `bash -n` syntax check OK.
+- **Smoke teszt:** `run_hulu.py --model deepseek-v4.1-flash:cloud --limit 1` (6 prompt, 1/task) → 6/6 lefutott, acc=0.333 (2/6), state `completed`, results JSONL 6 sor (`backend: ollama`, ollama meta mezők). Az Ollama szerver (localhost:11434) elérhető, a cloud modellek mennek. A smoke artifactok (state/results/log) kitakarítva — tiszta lappal indulhat az éles futás.
+- **Megfigyelés (pre-existing viselkedés, nem változtatva):** a `--limit`-es futás a végén `completed` státuszba kerül; az utána indított teljes futás `--reset` nélkül „már kész" üzenettel kilép. Smoke teszt után a teljes futást `--reset`-tel kell indítani.
+- **Wiki frissítve:** ez a bejegyzés + `runbooks/setup-kornyezet.md` (v1.7: uv szakasz, `datasets/` verziókövetett, UD v4 prepare lépés, checklist); `README.md` gyors indulás (uv alternatíva); `AGENTS.md` Környezet szekció (uv bullet).
+
+## 2026-10-17 (v1.7.1 — bíró modell váltás: deepseek-v4-pro:cloud → deepseek-v4-pro:0813-cloud)
+
+- **Trigger:** user döntése — a hivatalos bíró modell mostantól a `deepseek-v4-pro:0813-cloud` (Ollama Cloud, 1.65T param, FP8, 1M kontextus, thinking/tools). Az előző hivatalos bíró a `deepseek-v4-pro:cloud` volt (2026-07-19, v1.3.3 óta).
+- **Éles teszt (a projekt saját judge-útján, frissített konstanssal):** HuGME `judge_response` (num_predict=16, think=False) → 1.0; MT-Bench GSB normál + swap → A / A (konzisztens, pozíció-független); nyers hívás `done_reason=stop`, 4 token, ~0.6s. A `think=False` elnyomja a gondolkodást, a regex score-kinyerés hibátlanul működik.
+- **Kód:** `scripts/judge_hugme.py` + `scripts/judge_mt_bench.py` — `JUDGE_MODEL = "deepseek-v4-pro:0813-cloud"` (+docstring). A `rejudge_hugme.py` / `rejudge_mt_bench.py` a konstanst importálja → automatikusan az új bírót használja. `scripts/run_hugme.py` és `scripts/rejudge_mt_bench.py` docstring frissítve. `py_compile` OK.
+- **Shell orchestratorok:** `priority_judge.sh` (komment + 3 echo) és `queue_runner.sh` (komment) frissítve; `bash -n` OK. A baseline listák (`deepseek-v4-pro:cloud` a GSB baseline-okban) és a benchmark pool (`queue_all_benchmarks.sh`, `phase2_runner.sh`, `post_followup.sh`) VÁLTOZATLAN — azok nem bíró-hivatkozások.
+- **AGENTS.md:** a judge parancs kommentje frissítve `deepseek-v4-pro:0813-cloud`-ra (a régi `gemini-3-flash-preview` hivatkozás elavult volt).
+- **Wiki frissítve:** `concepts/llm-as-judge.md` (fejléc + sorrend + "Melyik bíró modellt mikor?" táblázat + self-bias), `concepts/hugme-benchmark.md`, `concepts/mt-bench-hu.md`, `concepts/szabad-kerdes-hu.md`, `concepts/tobbi-benchmark-modszere.md`, `entities/gemini-3-flash.md`, `entities/kimi-k2.6.md`, `overview.md`, `comparisons/cloud-vs-lokal.md`, `comparisons/modell-vs-modell.md`, `runbooks/llm-judge-prompt-template.md`, `runbooks/aggregate-results.md`, `runbooks/run-modell-x-openai-backend.md`, `reports/riport-template.md` (lábjegyzet + v1.1.2 changelog).
+- **Preserve (NEM érintve):** a történelmi riportok (`reports/report-2026-07-14.md` — a `report.md` symlink célpontja —, `reports/report-2026-07-25/27*.md`, `benchmark-statusz-*`, `eredmeny-osszesites-*`) bíró-hivatkozásai a régi bírót (`deepseek-v4-pro:cloud`) tükrözik — azokat az eredményeket ténylegesen azzal (vagy a még korábbi gemini-vel) pontozták.
+- **Self-bias SZENT szabály:** a bíró a `deepseek-v4-pro` családból való, és a `deepseek-v4-pro:cloud` benchmark-modellként szerepel a poolban → a deepseek-v4-pro saját HuGME/MT-Bench-HU sorait továbbra is független bíróval kell pontozni.
+- **Következmény:** a jövőbeni generatív judged eredmények bírója `deepseek-v4-pro:0813-cloud`; a meglévő eredmények provenance-e változatlan (rejudge csak kérésre).
+
+
+## 2026-10-22 (v1.8 — cloud kör: minimax-m3.1-flash / mistral-large-4 / muse-spark-open; heti kvóta 90% → leállás)
+
+- **Trigger:** a 2026-10-20-án indított cloud kör folytatása (minimax 2 napos ingyenes ablak → mistral befejezés → muse), majd a heti Ollama Cloud kvóta 90%-ánál a felhasználó kérésére leállítás; kérés: „addig is report, melyik modell milyen eredményt ért el”.
+- **Végrehajtva (modell-státusz):**
+  - `minimax-m3.1-flash:cloud` — **8/8 run + 4/4 bíró** (UD mindkét módban kihagyva).
+  - `mistral-large-4:cloud` — **10/10 run + 4/4 bíró** (UD-think a streaming wrapperrel fejeződött be 449/449-re).
+  - `muse-spark-open:cloud` — **5/10 run + 2/4 bíró**; a nothink kör teljes (hulu 77,06%, mmlu 91,40%, hugme 0,9054, mt_bench 0,5625, ud UPOS 0,8756/UAS 0,7858), a think körből csak a HuLU indult el (871/2581, csak HuCoLA 79,8%).
+  - `deepseek-v4.1-flash:cloud` referencia (10/10) változatlan.
+- **Composite (40/40/20):** muse-no **0,781** > minimax-th 0,726 > minimax-no 0,703 > mistral-no 0,699 > deepseek-no 0,650 > mistral-th 0,636 > deepseek-th 0,635. A muse-think még N/A.
+- **Kvóta-események:** 2026-10-22 03:59–05:15 `http_429 session usage limit` (globális fiók-limit) — supervisor 15 perces próbákkal, 05:15-kor automatikus resume (muse ud-no 373 → 449, adatvesztés nélkül); 08:24-kor a heti kvóta 90%-ánál kézi leállítás (orchestrator + supervisor + futó lépés), checkpointok érintetlenek.
+- **Módszertani megjegyzések (reportban részletesen):** (1) minimax UD kihagyva — a modell `think=False` mellett is reasoningol, hosszú mondatoknál üres válasz minden tokenbüdzsén; (2) a think lépések `/tmp/opencode/run3/stream_patch.py` streaming wrapperrel futottak a 60 s-os proxy-502 ellen (projekt `scripts/` változatlan); (3) az üres válaszok nem lettek újrafuttatva, csak dokumentálva; (4) **MMLU-HU duplikátum:** a forrás minden kérdést kétszer tartalmaz (1880 sor / 940 egyedi; eval 1500 sor / 750 egyedi), ezért a resume-elt futásoknál a sorszámok eltérnek (1500 / 1392 / 793) — dedup + újrafuttatás döntés a jövő hétre; (5) a runner „las” mezője valójában DEPREL-pontosság, nem joint LAS.
+- **Wiki frissítve:** új [reports/report-2026-10-22.md](reports/report-2026-10-22.md) (teljes riport, kötelező benchmark-leírásokkal, HuLU sub-task táblával, kvantálás/backend szakasszal); `reports/report.md` symlink átállítva erre; aggregátor kimenet újragenerálva (`reports/report.md`, `reports/composite_scores.csv`, `reports/results_heatmap.png`); ez a log-bejegyzés.
+- **Következő hét:** muse-think hátralévő 5 run + 2 bíró; MMLU-HU dedup döntés; a composite és a symlink újraszinkronizálása a muse-think lezárása után.
+
+## 2026-10-22 (v1.8.1 — UD-think diagnózis: nem kommunikációs hiba, hanem tokenbudget + parser-elcsúszás)
+
+- **Trigger:** felhasználói észrevétel — a think módú UD eredmények (UPOS ~0,10) jóval rosszabbak a nothinknél, pedig fordítva kellene; „mintha nem jönne meg a válasz”.
+- **Ok 1 (fő ok) — tokenbudget:** a `run_ud_hungarian.py` think módban `num_predict=8192`-t használ; a modellek a CoNLL-U előtt hosszú angol reasoningot generálnak. Élő próba (mistral, 25 tokenes mondat, streaming): 2048 → `done_reason=length`, 0 char válasz; 8192 → `length`, 8192 token, 24 669 char thinking, 0 char válasz; **16 384 → `stop`, 13 463 token, 1 403 char válasz**; 32 768 (68 tokenes mondat) → `stop`, 24 490 token, 2 995 char válasz. Az üres-arány hossz szerint 10–12% / 68–71% / 97–99% (rövid/közepes/hosszú) — tiszta budget-mintázat, nem timeout.
+- **Ok 2 — parser-elcsúszás:** a parser 10 oszlopos CoNLL-U-t feltételez (HEAD=parts[6]); a think válaszok 7–9 oszloposak → HEAD/DEPREL 0. Ugyanez rontotta a deepseek **nothink** UAS-t (tárolt 0,0823 → újraszámolva 0,4622).
+- **Javított újraszámolás** (robusztus parser, megválaszolt részhalmaz): deepseek-think UPOS 0,922 / UAS 0,877 / DEPREL 0,710 (89 item) vs nothink 0,779/0,462/0,516; mistral-think 0,867/0,829/0,642 (101 item) vs nothink 0,761/0,439/0,512; muse-nothink 0,901/0,814/0,618. **A think tehát jobb, amikor válaszol** — a tárolt think-pontszámok érvénytelenek; a részhalmaz a rövid mondatok felé torzít, ezért benchmarkként nem használható.
+- **Költség:** 32k budget mellett 167–276 s/item → 449 item ≈ 25–30 óra és ~9M token modellenként. Javaslat: UD nothink-only (dokumentáltan) vagy think-újrafuttatás 32768-cal külön kvótaablakban; a parser-javítás viszont indokolt. Projekt `scripts/` egyelőre **változatlan** (felhasználói jóváhagyásra vár).
+- **Wiki frissítve:** `reports/report-2026-10-22.md` — új „UD-think diagnózis” szakasz, a UD-táblázat érvénytelenségi figyelmeztetéssel; ez a log-bejegyzés.
+- **Helperék (nem repo):** `/tmp/opencode/run3/ud_reparse.py`, `/tmp/opencode/run3/probe_ud_think.py`.
+
+## 2026-10-22 (v1.8.2 — token-plafon eltávolítása: a modell azt használja, amit tud)
+
+- **Felhasználói döntés:** „Ne legyen token limit, amit az adott modell tud, az legyen használva.” A benchmarkok 2026-10-22-től nem szabnak `num_predict` plafont.
+- **Megvalósítás:** minden runner (`run_hulu`, `run_mmlu_hu`, `run_hugme`, `run_mt_bench_hu`, `run_ud_hungarian`) `num_predict=-1`-et ad; a `stop_on_error.py` defaultja is -1. A `judge_mt_bench` baseline-generálása szintén -1 (a bírói score-kinyerés szándékosan limitált: 8/16/24 token).
+- **Cloud-korlát fordítás:** a cloud API a -1-et `400 max_tokens must be positive` hibával utasítja el. Ezért a `resolve_num_predict()` a -1-et a modell tényleges max output token korlátjára fordítja (egyszeri, tokent nem generáló próbakérés 400-as hibaüzenetéből, cache-elve). Mért értékek: **muse-spark-open 1 048 576; minimax-m3.1-flash 524 288; deepseek-v4.1-flash 393 216; mistral-large-4 262 144**; lokális modellnél -1 marad (természetes stop / num_ctx).
+- **Időkorlátok:** nothink 900 s, think 3600 s; a streaming wrapper teljes item-idő védőkorlátja `RUN3_MAX_ITEM_SECONDS` (alap 5400 s), hogy egy végtelen ciklus ne égesse a kvótát. Az OpenAI-kompatibilis backendnél negatív `num_predict` = a `max_tokens` mező elhagyása.
+- **Élő validáció:** mistral UD think, 25 tokenes mondat, streaming → `done_reason=stop`, **13 750 generált token, 1 173 char válasz**; ugyanez 8 192-es limite mellett 0 char volt. A korlátlan futás ~103 s.
+- **Fontos:** a `report-2026-10-22.md` összes száma a plafon **előtti** futásokból származik; a következő futások (muse think, esetleges UD-újrafuttatás) már korlátlanok → a két csoport nem teljesen összemérhető.
+- **Dokumentáció frissítve:** `AGENTS.md` (kliens-beállítások), `wiki/concepts/hulu-benchmark.md`, `wiki/concepts/openai-backend-support.md`, `wiki/reports/report-2026-10-22.md` (5. módszertani pont).
+
+## 2026-10-24 (v1.9 — a token-loopok gyökérokása: a `temperature: 0` greedy dekódolás; 32k token-plafon mindenütt)
+
+- **Trigger:** a felhasználó a lokális `unsloth/Qwen3.5-9B-MTP-GGUF:UD-Q4_K_XL` UD Hungarian futás 31%-os token-loop arányát mutatta, majd megállította a think mérést („nem mérünk think-et").
+- **Gyökérok (felhasználói diagnózis, mérve igazolva):** a `temperature: 0.0` **greedy** dekódolás. A lokális modell a CoNLL-U táblát gyakran degenerált ciklusba viszi (növekvő sorszám-sor: `1 2 3 … 6598`; kitöltő `_`-sor; FEATS-ismétlődés: `Voice=Passive|Voice=Active|…`). A mintavétel nélküli backend-default (llama-server: `temperature: 0.8`) megszünteti a loopok nagy részét.
+- **Mérve:** az 5 korábban loopoló mondat (`— Hogyan tovább?`, `Már megérte Hannoverbe jönnie.`, `Ettől a győzelemtől magabiztos lettem.`, `Szerencsére megúsztuk kapott gól nélkül.`, `Az elemzés szerint korántsem.`) a javítás után **227–7007 karakteres tiszta CoNLL-U** választ ad (a 31–75k helyett). A llama-server a kérésben látott `temperature: 0.8` a saját defaultja → bizonyítja, hogy a kérés már nem küld sampling paramétert.
+- **Kódváltozás (minden futásra):** a `scripts/stop_on_error.py` és `scripts/openai_compat.py` kéréseiből **kikerült a `temperature`** (és a `top_p`/`top_k`/`min_p`/`repeat_penalty` sem kerül oda) → minden backend (Ollama, llama-server, vLLM, TGI) a saját defaultját alkalmazza. Új konstans: `MAX_OUTPUT_TOKENS = 32768` — a generálás felső korlátja **mindenhol 32k**; a tényleges keretet a backend contextje adja, így a prompt + a válasz együtt belefér a 32k-ba. A `resolve_num_predict` a cloud modellek saját plafonját csak 32k alatt használja.
+- **Bírók:** a `judge_hugme.py` / `judge_mt_bench.py` / `rejudge_hugme.py` is a közös hívókat használják → a bíróminta is nem-determinisztikus lett. A pontszám-kivonat ezért **lépcsőzetes** (önálló szám/betű egy sorban → szövegen belül → első karakter), hogy a rendetlen bíróválasz ne rontsa a döntést.
+- **Új: `scripts/deg_loop.py`** — degeneráció-detektor (periodicitás-próba a farkon + számlálóciklus-felismerés, 12k karakteres küszöb). Validálva: a 5 cloud UD futáson **0 false positive**, a régi temp=0 futáson 103/449 = 22,9% valódi degeneráció.
+- **Új: bounded retry a UD runnerben** (`run_ud_hungarian.py`): degenerált válasz esetén legfeljebb **2 újrapróbálkozás** (az első kérés a teljes 32 768 tokenes plafonnal, az újrapróbálkozások **8 192** tokenes plafonnal, hogy a használhatatlan generáció ~1,5 perc alatt levágódjon). Az első tiszta minta nyer; ha mindhárom degenerált, az utolsó hibaként számít. A stop-policy érintetlen: a retry csak **sikeres** válasz után, degeneráció esetén fut. A `degenerate_retries` mező a JSONL sorban.
+- **Új: `scripts/reparse_ud.py`** — a tárolt nyers válaszokból **offline** újraparse-olja a UD pontszámokat és frissíti a summary-t (a futások újrafuttatása nélkül).
+- **Parser-javítás:** a UPOS oszlopot is robusztusan keressük (a 4. oszlop az elvárt, de a modell gyakran beszúr egy extra FORM-ot a LEMMA után → a fix 4. index félrement, és a sor teljesen eldobódott). **Hatás a tárolt cloud számokra (újraparse-olt):** deepseek-v4.1-flash nothink UAS **0,0823 → 0,4792**, LAS 0,0959 → 0,5314; muse nothink UAS 0,7858 → 0,8254; mistral nothink UAS 0,4393 → 0,4506. A UPOS-ok alig változnak (a cloud modellek formátuma szabványos).
+- **Fontos módszertani megjegyzés (mérve):** a sampling-váltás a **formátumhűséget** is rontja — a lokális modell a backend default (0.8) sampling mellett ~25%-ban 60–65k karakteres, **eltérő sémájú** CoNLL-U-t generál (a kért 7 oszlop helyett 8: `ID FORM LEMMA FORM UPOS …`), ami 6 percet éget és 0 pontot ér. A greedy (temp=0) dekódolás formátumban következetesebb volt, de 25%-ban degenerált. A riport ezért három számot ad meg: összes UPOS / parse-olható válaszokon mért UPOS / parse-hányad.
+- **Archiválás:** a `temperature: 0` + korlátlan limitekkel készült lokális eredmények `*.temp0.*` néven megmaradtak (az aggregátor nem látja őket). A 2026-10-24 előtti **cloud** eredmények is `temperature: 0.0` + korlátlan/4096/8192/16384-es limitekkel készültek → a lokális modell új eredményeivel **nem teljesen összemérhetők** (a sampling-paraméter és a token-plafon is más).
+- **Döntések:** think fázis **kihagyva** (felhasználói döntés, 2026-10-23); a cloud kvóta 2026-10-24 00:10-kor ismét elérhető volt → a judge-os benchmarkok (HuGME + MT-Bench-HU) a lokális modellre is futtathatók.
+- **Futtatás:** `phase4` (UD → HuLU → MMLU nothink, `setsid`-del, 20 újrapróbálkozás/lépés) + `phase5` lánc (HuGME + MT-Bench-HU generálás + cloud bíró).
+
+## 2026-10-26 (v2.0 — a lokális Qwen3.5-9B kör lezárása: bírók, UD-újraparse, breakdown-javítások, riport)
+
+- **Generálás (2026-10-24):** a lokális `unsloth/Qwen3.5-9B-MTP-GGUF:UD-Q4_K_XL` (nothink, llama-server) mind az 5 benchmarkon lefutott: UD 449/449 (9 h 21 m, 52/449 item retry, 0 elfogadott degenerált), HuLU 2581/2581 (16 m), MMLU 1500/1500 (21 m), HuGME 300/300 (70 m), MT-Bench 24/24 (9 m).
+- **Bírók elakadtak 2026-10-24-én:** a HuGME-bíró 76/300-nál megállt (heti cloud kvóta), az MT-Bench bíró el sem indult, mert a baseline modell (`deepseek-v4-flash:cloud`) **2026-09-25-én RETIRED** lett (HTTP 410: „deepseek-v4-flash:0731 was retired”). A 0 bájtos baseline-fájl maradt utána.
+- **Bírók lezárva 2026-10-26-án (run5, `setsid`, 10 retry/lépés):**
+  - **HuGME: 300/300, score 0,7203.** Metrika-bontás: toxicity 0,980, answer_relevancy 0,839, prompt_alignment 0,793, bias 0,775, summarization 0,671, **faithfulness 0,260** (a fő gyengeség: tartalmi hűség). 52/300 item < 0,5; 4 item 0,0.
+  - **MT-Bench-HU: 24/24, score 0,3958, strict 0,000 (0W/10L/38T)**, 2 baseline-nal (`deepseek-v4-pro:cloud`, `kimi-k2.6:cloud`) a `rejudge_mt_bench.py`-val. A harmadik baseline (deepseek-v4-flash) RETIRED → a sablon 3 baseline-os protokollja egyelőre nem állítható vissza.
+- **UD újraparse alkalmazva minden futásra** (`scripts/reparse_ud.py`): a robusztus UPOS-oszlopkeresés miatt deepseek-v4.1-flash nothink UAS **0,0823 → 0,4789**, LAS 0,0959 → 0,5314; mistral nothink UAS 0,4393 → 0,4506, LAS 0,5156 → 0,5283; muse nothink UAS 0,7858 → 0,8254, LAS 0,6012 → 0,6337; lokális UPOS 0,3071 → 0,3256. **A cloud composite-ok emiatt változtak** (deepseek nothink 0,650 → 0,706; muse 0,781 → 0,788) — a 2026-10-22-i UD-táblázat elavult.
+- **`breakdown_report.py` javítások (3 valódi bug):**
+  1. **MMLU dedup:** a `by_id` csak `id`-re kulcsolt, de a MMLU-HU id-k nem globálisak (`mmlu_hu_val_2` minden tantárgyban létezik) → a bontás 1500 sorból **61-re** omlott, 7 tantárggyal. Javítás: `(subject, id)` kulcs.
+  2. **`hasattr(config, 'TASKS')` mindig igaz** volt (a `SimpleNamespace`-ben `TASKS=None`), ezért a MMLU-nál `tasks=None` → `TypeError`, a UD-nál rossz ág. Javítás: `getattr(..., None)`.
+  3. **UD-ág:** csak akkor futott, ha nincs `task` mező (a mostani sorokban van: `ud_hungarian`), a float metrikákat binárisan számolta, és a CSV-be `overall` került, ami nem volt a fieldnames-ben. Javítás: `task`-független ág + float-összegzés (`sum`) + `upos_accuracy` alias + CSV-szűrés.
+- **Aggregáció:** helyi composite **0,5345** (STAT 0,679 / GEN 0,558 / LING 0,199) — 8. hely; a mezőny élén a muse-spark-open nothink **0,788**, majd minimax think 0,726, deepseek nothink 0,706.
+- **Riport + wiki:** új [report-2026-10-24.md](reports/report-2026-10-24.md) (kötelező benchmark-leírások, HuLU per-sub-task tábla minden modellre, kvantálás `UD-Q4_K_XL`, backend `openai`, a három UD-szám, sampling-módszertan); a `reports/report.md` symlink átállítva; új entitás-oldal [qwen3.5-9b-mtp-lokalis.md](entities/qwen3.5-9b-mtp-lokalis.md); `index.md`, `cloud-vs-lokal.md`, `modell-vs-modell.md` frissítve; ez a bejegyzés.
+- **Nyitott:** a `scripts/queue_all_benchmarks.sh` `MODELS` tömbjében még szerepel a RETIRED `deepseek-v4-flash:cloud`; az MMLU-HU dataset duplikátum (1500/750) továbbra is nyitott; a muse think kör és a lokális think továbbra sincs mérve.
+
+## 2026-10-26 (v2.1 — muse-spark-open think kör indítva, gép-újraindítás miatt leállítva)
+
+- **Döntés:** a felhasználó „folytasd a benchmark-ot" utasítására a hátralévő kör a **`muse-spark-open:cloud` think** befejezése (2026-10-22-én a HuLU 871/2581-nél szakadt meg heti kvóta miatt).
+- **Tiszta protokoll:** a régi HuLU-rész (871 item, `temperature: 0`) **43 üres választ** tartalmazott (4,9%) → `--reset`, a régi fájlok `hulu_results.temp0.jsonl` / `hulu.temp0.json` néven archiválva. Az új futás a 2026-10-24-i protokollal megy (nincs sampling param, 32k plafon, explicit `think: true`).
+- **`run_mmlu_hu.py` determinizmus-javítás:** a `completed_set` eddig csak a futás elején készült pillanatkép volt → megszakítás után a duplikált `(subject, id)` kérdések kimaradtak, folyamatos futásnál nem (1500 vs. ~750 sor). Most minden feldolgozott item bekerül a halmazba → a resume ugyanannyi sort ad, mint a folyamatos futás (750 egyedi kérdés).
+- **Cloud think hosszú hívások:** a 2026-10-22-i 502-probléma nem jött vissza (19,6 s / 3295 token → HTTP 200), nem kell streaming wrapper.
+- **Eredmény (befejezett lépés):** **HuLU think 77,41%** (1998/2581, 0 üres, 3 h 18 m) — a mezőny legjobb HuLU-ja. Sub-task: HuCoLA 82,2 / HuCoPA 97,0 / HuRTE 90,5 / HuSST 72,7 / HuWNLI 11,7 / HuCB 76,7. **Think vs. nothink (ugyanaz a modell): 77,41% vs. 77,06% = +0,35 pt** — a gondolkodás itt alig számít: HuCoLA +0,3, HuSST +1,8, HuWNLI +1,7, de HuCoPA −1,0, HuRTE −2,9, **HuCB −7,8**. (Korábbi téves közlés: a „+7,2 pt" a *lokális* modell nothinkjéhez hasonlított, nem a muse-hoz; a HuWNLI 60,0% szintén a lokális modell értéke volt.)
+- **Leállítás (2026-10-26 11:35):** a felhasználó gépet indít újra → a driver és a runner leállítva (SIGTERM), az MMLU 100/750-nél tartott (acc 0,950). A state `failed_stopped` / `machine_restart_2026-10-26`, a results fájl a checkpoint szintjére trimmelve (122 → 100 sor, 0 duplikátum). **A llama-server érintetlen.**
+- **Folytatás reboot után:** `bash /tmp/opencode/run6/driver_run6.sh` (a HuLU kész, a MMLU resume-ol 100-ról; utána HuGME → MT-Bench → bírók → UD).
+
+## 2026-10-27 (v2.2 — a muse-spark-open:cloud THINK kör lezárva: 5 benchmark + 2 bíró, composite 0,7937)
+
+- **Futás:** run6 (`logs/run6/driver.log`), 2026-10-26 08:08 → 10-27 00:20, nettó ~9 óra. A HuLU tiszta `--reset`-tel (a 2026-10-22-i temp=0 rész, 43 üres válasszal, `*.temp0.*` néven archiválva), a többi benchmark folytatással.
+- **Eredmények (think / nothink):** HuLU **77,41%** / 77,06% (+0,35); MMLU-HU **93,07%** (750 dedupolt) / 91,40% (1500) (+1,67); HuGME **0,9034** / 0,9054 (−0,20); MT-Bench **0,5729** (8W/1L/39T) / 0,5625 (8W/2L/38T) (+1,04); UD **UPOS 89,88% / UAS 82,76% / LAS 63,63%** (composite 78,76%, parse 100%) / 89,71% / 82,54% / 63,37% (+0,22).
+- **Composite (40/40/20): 0,7937** → **a mezőny élén** (a nothink pár 0,7876 a 2. helyen). Mindhárom dimenziót a think nyeri, de < 1 pt-tal: STAT 0,852, GEN 0,738, LING 0,788.
+- **Fő tanulság:** a think mód ezen a modellen **alig számít** (+0,6 pt composite); a HuCB-n **ront** (−7,8 pt), az MMLU-n javít (+1,7 pt). A HuWNLI mindkét módban katasztrofális (10–11,7%) — a lokális 9B viszont 60%-ot ér el ugyanezen.
+- **Megszakítások (a checkpoint-rendszer helyesen kezelte):**
+  - 10-26 11:35 gép-újraindítás → MMLU 100/750-nél leállt; a results 122 sora és a 100 elemű checkpoint eltérése miatt 22 többletsor trimelve, state `failed_stopped` / `machine_restart_2026-10-26`. Adatvesztés nincs.
+  - 10-26 22:59 `http_429` az UD 288/449-nél → 3 perc múlva a driver újraindította, 23:02-től hibátlanul befejeződött.
+- **Kód:** `scripts/run_mmlu_hu.py` determinizmus-javítás (a `completed_set` minden feldolgozott item után bővül → a resume ugyanannyi sort ad, mint a folyamatos futás: 750 egyedi kérdés, nem 1500).
+- **Korrekciók (a riportban dokumentálva):**
+  1. A v2.1 bejegyzés „+7,2 pt think vs. nothink" állítása **téves volt** (a *lokális* modell nothinkjéhez hasonlított) — a helyes Δ **+0,35 pt** (javítva a v2.1 szövegben).
+  2. A futás közben, 112/449 UD itemnél jelentett „UAS +11,9 / LAS +25,5 pt" **nem tartott** — a végleges Δ +0,22 / +0,26 pt (a korai mondatok rövidebbek/könnyebbek).
+- **Wiki:** új [report-2026-10-27.md](reports/report-2026-10-27.md) (kötelező benchmark-leírások, HuLU per-sub-task tábla mindkét módra, kvantálás `ollama-cloud`, backend `ollama`, UD három szám, composite A/B); a `reports/report.md` symlink átállítva; új entitás-oldal [muse-spark-open.md](entities/muse-spark-open.md); `index.md` és `cloud-vs-lokal.md` frissítve.
+- **Nyitott:** a lokális Qwen3.5-9B think módja nincs mérve; a harmadik MT-Bench baseline (deepseek-v4-flash) RETIRED; az MMLU-HU dataset továbbra is 2× duplikált; a queue MODELS listájában még szerepel a RETIRED `deepseek-v4-flash:cloud`.
+
+## 2026-10-27 (v2.3 — beam:cloud teljes kör think-only + streaming javítás + UD-újrafuttatás indítva)
+
+- **Új modell:** `beam:cloud` — 501B, 1 048 576 token kontextus, capabilities: completion + thinking (szintek low/medium/high/xhigh/max, default max) + tools.
+- **Mód-diagnózis:** a **nothink nem működik** — `think: false` a natív `/api/generate`-en 432 char reasoningot adott, a `/v1` + `chat_template_kwargs.enable_thinking=false` 304-et → a modell mindig gondolkodik. Ezért **think-only** mérés (precedens: qwen3-next-80b lokális). A mérés a default (**max**) szinten történt; a szintek összevetése nyitott.
+- **Teljes kör (run8 + run8b):** HuLU **75,09%** (1938/2581; HuCoLA 81,4 / HuCoPA 93,0 / HuRTE 90,9 / HuSST 68,8 / **HuWNLI 8,3** / HuCB 74,8); MMLU-HU **91,73%** (688/750); HuGME **0,9082** (**faithfulness 0,606 — mezőny-legjobb**); MT-Bench **0,4896** (4W/5L/39T); UD **UPOS 87,40 / UAS 80,36 / LAS 62,46** (composite 76,74%, parse 98,2%).
+- **Composite (40/40/20): 0,7667 → 3. hely** (muse think 0,7937 és muse nothink 0,7876 mögött, a deepseek/mistral/minimax nothink 0,70–0,71 előtt).
+- **Új kód: opt-in streaming a `stop_on_error.py`-ban** (`BENCH_STREAM=1`). Ok: az UD think válaszai (20 945 char gondolkodás, 6 823 eval token) átlépik a cloud proxy **60 s-os** nem-streamelt korlátját → `http_502`. A stream NDJSON-sorai a nem-streamelt válasz alakjára állnak össze (response/thinking/done_reason/eval_count); a hibás chunk **fatális hiba** (nem csendes csonkolás); a flag nélkül a régi út fut. Élő validáció: hosszú CoNLL-U kérés 29 s; a run8b alatt egy stream-hiba (item 203) tisztán leállt, majd resume-olt **duplikátum nélkül** (253 sor = 253 egyedi id).
+- **UD-újrafuttatás (run7b, folyamatban):** a 2026-10-22-i token-plafon miatt érvénytelen think UD-k — **deepseek-v4.1-flash** (356/449 üres), **mistral-large-4** (347/449 üres), **minimax-m3.1-flash** (soha nem futott) — újrafuttatása streaminggel; a régi fájlok `*.truncated.*` néven archiválva. **Amíg nem készülnek el, a három modell composite-ja UD nélkül számol (torz: deepseek think 0,6418 → átmenetileg 0,7606; mistral think 0,6547 → 0,7738).**
+- **Wiki:** új [report-2026-10-27-beam.md](reports/report-2026-10-27-beam.md) (kötelező benchmark-leírások, HuLU per-sub-task, kvantálás `ollama-cloud`, backend `ollama` + streaming, UD három szám), új entitás [beam.md](entities/beam.md); a `reports/report.md` symlink átállítva a beam-riportra; `index.md` frissítve.
+
+## 2026-11-09 (v2.4 — nincs-plafon mezőny lezárva: UD + MT-Bench újrafuttatva, deepseek/muse holtverseny)
+
+- **Szabály életbe lépett:** cloud = nincs kimeneti plafon, lokális = 32k (2026-11-04). A `num_predict` cloud esetén kimarad a kérésből; a `stop_on_error.default_num_predict()` dönt, a runner `--num-predict` flaggel felülírható.
+- **Mit futtattunk újra no-cap-pel:** a teljes **UD** kört (deepseek, mistral, minimax, beam) és a teljes **MT-Bench** kört (8 régi futás + beam). A HuLU/MMLU/HuGME 32k-s maradt, mert a beam A/B mérés szerint a hatás ≤0,13 pt (HuLU +0,08, MMLU −0,13, HuGME +0,0005).
+- **Látványos javulások (32k → no-cap):** deepseek think UD 73,69/66,35/54,30 → **91,68/82,10/67,43** (91 → 1 üres válasz, composite 64,78 → **80,40**); minimax nothink MT-Bench 0,3438 → **0,4896** (+14,6); deepseek think MT-Bench 0,4167 → 0,5208 (+10,4); minimax think MT-Bench +8,3.
+- **Romlás is van:** muse MT-Bench 0,5729 → 0,5521 (think), 0,5625 → 0,5000 (nothink) — a no-cap **nem univerzális javítás**.
+- **Végleges rangsor (40/40/20):** 1. deepseek-v4.1-flash think **0,7901** · 2. muse-spark-open think **0,7896** (Δ 0,0005 = holtverseny) · 3. muse nothink 0,7751 · 4. beam 0,7737 · 5. mistral think 0,7732 · 6. minimax think 0,7200 · 7. deepseek nothink 0,7123 · 8. mistral nothink 0,7000 · 9. minimax nothink 0,7391 (UD nélkül, súly-újraosztás) · 10. lokális 9B 0,5345.
+- **Dimenzió-győztesek:** STAT = muse think (0,852); GEN = deepseek think (0,729); LING = deepseek think (0,804).
+- **Wiki:** új [report-2026-11-09-nocap.md](reports/report-2026-11-09-nocap.md) (teljes, kötelező leírásokkal, HuLU sub-task táblával, kvantálással, UD három számmal), `report.md` symlink átállítva, `index.md` frissítve; a `reports/composite_scores.csv` naprakész.
+- **Nyitott:** minimax **nothink** UD sosem futott (érdemes no-cap-pel megpróbálni); lokális 9B think kör; harmadik MT-Bench baseline; HuLU/MMLU/HuGME no-cap újrafuttatás teljes egységességhez.
+
+## 2026-11-09 (v2.5 — a tábla lezárva: minimax nothink UD is elkészült)
+
+- **minimax-m3.1-flash nothink UD (no-cap):** 449/449, **UPOS 72,16% / UAS 55,20% / LAS 43,41% → composite 0,5692**, 1 üres válasz, ~14 s/item (a `think: false` itt **működik**, ellentétben a beam-mel).
+- **Ezzel nincs hiányzó cella:** mind a 10 futás mind az 5 benchmarkkal rendelkezik; a súly-újraosztásos torz sorok megszűntek.
+- **Composite-változás:** minimax nothink 0,7391 (UD nélkül, téves) → **0,7051** (valódi UD-vel). A teljes rangsor változatlan éllel: deepseek think 0,7901 · muse think 0,7896.
+
+## 2026-11-10 (v2.6 — kanonikus összesítő riport)
+
+- **`wiki/reports/report.md` mostantól valódi, szerkesztett összesítő fájl** (nem symlink). Tartalma: a teljes **2026-11-es no-cap mezőny** (10 futás × 5 benchmark, minden cella kitöltve) + a **2026-07-es archív mezőny** (18 sor) külön, „nem összemérhető" figyelmeztetéssel, + **protokoll-történet** (greedy → nincs sampling → 32k → nincs plafon) a mért hatásokkal.
+- A riport tartalmazza a kötelező elemeket: benchmark-leírások minden szekcióban, HuLU per-sub-task tábla (mind a 10 futásra), kvantálás, backend, UD három szám, composite A + B, dimenzió-győztesek.
+- **Fő üzenet:** deepseek-v4.1-flash think (0,7901) és muse-spark-open think (0,7896) holtverseny; deepseek nyeri a GEN + LING dimenziót, muse a STAT-ot; a plafon elhagyása modellfüggően ±(2–18) pt-otmozgat.

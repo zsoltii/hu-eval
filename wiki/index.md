@@ -65,9 +65,9 @@ A teljes projekt-struktúra (scriptek, adatok, eredmények, state) a gyökér [`
 - [Nyelvészeti összefoglaló](concepts/nyelveszeti-osszefoglalo.md) — a 3 nyelvészeti teszt együtt, composite score
 - [**Checkpoint és folytatható futtatás**](concepts/checkpoint-progress.md) ⭐ — stop-on-error + resume politika (2026-06-06)
 
-## Entities (modellek, datasetek) — 13 db
+## Entities (modellek, datasetek) — 14 db
 
-### Modellek (12 db, 1 RETIRED)
+### Modellek (14 db, 1 RETIRED)
 
 - [MiniMax M3 (Cloud)](entities/minimax-m3.md) — aktív default cloud modell, 256k kontextus
 - [DeepSeek V4 Pro (Cloud)](entities/deepseek-v4-pro.md) — 🏆 legjobb composite (nothink, 54.3%)
@@ -82,6 +82,9 @@ A teljes projekt-struktúra (scriptek, adatok, eredmények, state) a gyökér [`
 - [GPT-OSS 20B (Cloud)](entities/gpt-oss-20b.md) — leggyengőbb aktív (MMLU 46%)
 - [Qwen3-Next 80B (Cloud)](entities/qwen3-next-80b.md) — ⚠️ RETIRED 2026-06-16 (HTTP 410)
 - [Qwen3-Next 80B Thinking GGUF (lokális)](entities/qwen3-next-80b-lokalis.md) — **lokális referencia** (v1.5, 2026-07-27), IQ3_XXS, llama-server `localhost:8080/v1`; csak think módban fut (nincs nothink); UD Hungarian v4 kész (UPOS 79.36%, composite 64.73%)
+- [Qwen3.5-9B-MTP GGUF (lokális)](entities/qwen3.5-9b-mtp-lokalis.md) — **lokális 9B** (v2.0, 2026-10-24), UD-Q4_K_XL, llama-server; csak nothink (think nincs mérve); composite 0,5345; UD UPOS 32,56% / UAS 15,75% / LAS 11,43%; HuWNLI 60,0% (a mezőny legjobbja)
+- [Beam (Cloud)](entities/beam.md) — **501B, 1M ctx, think-only** (a nothink flag nem működik); composite 0,7667 (3. hely); HuGME 0,9082 + **faithfulness 0,606** (mezőny-legjobb); MT-Bench gyenge (0,4896)
+- [Muse Spark Open (Cloud)](entities/muse-spark-open.md) — **a mezőny éllovasa** (2026-10-27), mindkét mód teljes; composite 0,7937 (think) / 0,7876 (nothink); UD 78,8% composite (a legjobb); gyenge HuWNLI (10–12%)
 
 ### Datasetek (5 db)
 
@@ -106,11 +109,15 @@ A teljes projekt-struktúra (scriptek, adatok, eredmények, state) a gyökér [`
 - [Eredmények aggregációja](runbooks/aggregate-results.md) — composite score + riport
 - [Debug: modell nem válaszol](runbooks/debug-modell-nem-valaszol.md) — gyakori hibák + retry
 
-## Reports (riportok) — 13 db (v1.3 — végleges baseline)
+## Reports (riportok) — 14 db (v1.3 — végleges baseline)
 
 ### 🎯 BASELINE (hivatalos alapérték — minden jövőbeli összehasonlítás ehhez viszonyít)
 
-- **[Teljes összesítő riport (`wiki/reports/report.md`)](reports/report.md)** — kanonikus teljes riport (szimbolikus link a legfrissebb dátumozott riportra). Új modell hozzáadásakor ezt is frissíteni kell!
+- **[Teljes összesítő riport (`wiki/reports/report.md`)](reports/report.md)** — **kanonikus összesítő** (2026-11-10): a teljes aktuális no-cap mezőny + a 2026-07-es archív mezőny, protokoll-történettel és a plafon-hatás mérésével. Új modell hozzáadásakor ezt is frissíteni kell!
+- **[Nincs-plafon mezőny riport (2026-11-09)](reports/report-2026-11-09-nocap.md)** — 10 futás × 5 benchmark, **no-cap UD + MT-Bench**; deepseek think 0,7901 és muse think 0,7896 holtverseny az élen; a `report.md` symlink célja.
+- **[beam TELJES riport (2026-10-27)](reports/report-2026-10-27-beam.md)** — `beam:cloud` (501B, 1M ctx) **think-only** teljes kör; composite **0,7667** (3. hely); a mezőny legjobb faithfulness-e (0,606).
+- **[muse-spark-open THINK riport (2026-10-27)](reports/report-2026-10-27.md)** — a `muse-spark-open:cloud` think kör mind az 5 benchmarkja + 2 bíró; composite **0,7937** (mezőnyelső); think vs. nothink összevetés (+0,61 pt).
+- **[Lokális Qwen3.5-9B-MTP riport (2026-10-24)](reports/report-2026-10-24.md)** — lokális 9B (UD-Q4_K_XL, llama-server, nothink) + a 2026-10-as cloud mezőny **javított UD-vel**; composite 0,5345. **A `temperature: 0` loop-javítás és a 32k plafon referenciariportja.**
 - **[Végleges benchmark riport (2026-07-14)](reports/report-2026-07-14.md)** — 11 modell × 2 mód × 5 benchmark + Qwen3-Next-80B IQ3_XXS (lokális), 40/40/20 composite (AGENTS.md kötelező), 2 heatmap (stat + gen/ling), queue kész 20:14 CEST. **Ez a kanonikus kiindulási alapérték.**
 - **[Qwen3-Next-80B IQ3_XXS riport (2026-07-27)](reports/report-2026-07-27-lokalis-qwen3-next.md)** — 1 modell × think × 5 benchmark (UD v4 kész), 40/40/20 composite = 64.85%. **Végleges, UD eredménnyel.**
 - [Riport template](reports/riport-template.md) — v1.1 (2026-07-15), a riport formátumdefiníciója (sebesség/költség törölve, két composite tábla, két heatmap)

@@ -3,7 +3,7 @@
 *Típus:* entity
 *Forrás(ok):* Moonshot AI official model card, belső benchmark eredmények
 *Létrehozva:* 2026-06-06
-*Frissítve:* 2026-07-15 (v1.3 — benchmark modellként, végleges baseline eredményekkel)
+*Frissítve:* 2026-10-17 (bíró pool hivatkozás frissítve: deepseek-v4-pro:0813-cloud; korábban 2026-07-15: v1.3 — benchmark modellként, végleges baseline eredményekkel)
 
 ---
 
@@ -16,7 +16,7 @@
 - **Státusz a projektben:** aktív, **benchmark modell** (v1.2.4 óta a bíró státusz törölve — a HuLU/MMLE/HuGME/MT-Bench/UD fut rajta)
 - **Megjelenés:** 2025 Q4 — a K2.5 utódmodellje
 
-> 📝 **Szerep-változás:** eredetileg (v1.2.1–v1.2.3) judge + benchmark volt, majd v1.2.4-ben a bíró státusz véglegesen törölve — a kimi KIZÁRÓLAG benchmark modellként szerepel. A bíró pool jelenleg a `deepseek-v4-pro:cloud`-ból áll (2026-07-19 óta; a `gemini-3-flash-preview:latest` megszűnt 2026-07-14).
+> 📝 **Szerep-változás:** eredetileg (v1.2.1–v1.2.3) judge + benchmark volt, majd v1.2.4-ben a bíró státusz véglegesen törölve — a kimi KIZÁRÓLAG benchmark modellként szerepel. A bíró pool jelenleg a `deepseek-v4-pro:0813-cloud`-ból áll (2026-10-17 óta; korábban `deepseek-v4-pro:cloud`; a `gemini-3-flash-preview:latest` megszűnt 2026-07-14).
 
 ## Képességek
 
@@ -77,7 +77,7 @@
 A projekt kontextusában a Kimi K2.6 benchmark modellként szerepel:
 
 - **HuLU / MMLU-HU** — statisztikai benchmarkok futtatása
-- **HuGME / MT-Bench-HU** — generatív benchmarkok (jelenlegi bíró: deepseek-v4-pro:cloud, 2026-07-19 óta; a gemini-3-flash-preview megszűnt 2026-07-14)
+- **HuGME / MT-Bench-HU** — generatív benchmarkok (jelenlegi bíró: deepseek-v4-pro:0813-cloud, 2026-10-17 óta; a gemini-3-flash-preview megszűnt 2026-07-14)
 - **UD Hungarian** — szintaktikai elemzés (nothink módban erős: 61.8%)
 
 **NEM használjuk:**

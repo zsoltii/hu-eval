@@ -50,7 +50,7 @@ import requests
 # Helyi modulok importálása (scripts/ mappa)
 sys.path.insert(0, str(Path(__file__).parent))
 from checkpoint import Checkpoint
-from stop_on_error import call_ollama_strict, OllamaFatalError, FatalBackendError
+from stop_on_error import call_ollama_strict, OllamaFatalError, FatalBackendError, MAX_OUTPUT_TOKENS
 from openai_compat import call_openai_strict
 
 
@@ -192,8 +192,8 @@ def run_benchmark(
                         response = call_openai_strict(
                             item["prompt"], model,
                             think=think,
-                            num_predict=(16384 if think else 4096),
-                            timeout=(600 if think else 300),
+                            num_predict=None,
+                            timeout=(3600 if think else 900),
                             max_retries=(1 if think else 2),
                             base_url=base_url,
                             api_key=api_key,
@@ -202,8 +202,8 @@ def run_benchmark(
                         response = call_ollama_strict(
                             item["prompt"], model,
                             think=think,
-                            num_predict=(16384 if think else 4096),
-                            timeout=(600 if think else 300),
+                            num_predict=None,
+                            timeout=(3600 if think else 900),
                             max_retries=(1 if think else 2),
                         )
                     raw = response.get("response", "").strip()

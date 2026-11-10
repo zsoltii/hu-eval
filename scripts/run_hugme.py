@@ -3,7 +3,7 @@
 run_hugme.py — HuGME benchmark futtatása egy modellen, CHECKPOINT-AWARE.
 
 0-shot szabad generálás 300 prompton. A válaszokat a judge_hugme.py
-pontozza deepseek-v4-pro:cloud bíróval (6 metrika).
+pontozza deepseek-v4-pro:0813-cloud bíróval (6 metrika).
 
 Stop-on-error + resume.
 
@@ -25,7 +25,7 @@ import requests
 
 sys.path.insert(0, str(Path(__file__).parent))
 from checkpoint import Checkpoint
-from stop_on_error import call_ollama_strict, OllamaFatalError, FatalBackendError
+from stop_on_error import call_ollama_strict, OllamaFatalError, FatalBackendError, MAX_OUTPUT_TOKENS
 from openai_compat import call_openai_strict
 
 OLLAMA_URL = "http://localhost:11434"
@@ -109,8 +109,8 @@ def run_benchmark(model: str, limit: int | None, reset: bool,
                         response = call_openai_strict(
                             item["prompt"], model,
                             think=think,
-                            num_predict=4096,
-                            timeout=(600 if think else 300),
+                            num_predict=None,
+                            timeout=(3600 if think else 900),
                             max_retries=(1 if think else 2),
                             base_url=base_url,
                             api_key=api_key,
@@ -119,8 +119,8 @@ def run_benchmark(model: str, limit: int | None, reset: bool,
                         response = call_ollama_strict(
                             item["prompt"], model,
                             think=think,
-                            num_predict=4096,
-                            timeout=(600 if think else 300),
+                            num_predict=None,
+                            timeout=(3600 if think else 900),
                             max_retries=(1 if think else 2),
                         )
                     raw = response.get("response", "").strip()

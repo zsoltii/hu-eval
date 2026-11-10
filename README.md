@@ -78,13 +78,20 @@ hu-eval/
 ## Gyors indulás
 
 ```bash
+# A) conda eval-hu env (eredeti konvenció)
 conda create -n eval-hu python=3.11 -y
 conda activate eval-hu
-pip install requests pandas matplotlib deepeval ollama-python datasets
+pip install -r requirements.txt
 
-# 1. Dataset letöltés (egyszeri)
-python scripts/download_hulu.py
-python scripts/download_mmlu_hu.py
+# B) uv venv (conda nélküli gépek, 2026-10-17 óta)
+uv venv --python 3.11 .venv
+uv pip install --python .venv/bin/python -r requirements.txt
+source .venv/bin/activate
+
+# 1. Datasetek előkészítése a data/ mappába (a corpora a repo része: datasets/)
+#    Ha a datasets/ hiányozna, fallback: python scripts/download_hulu.py  stb.
+mkdir -p data && cp -r datasets/* data/
+python scripts/prepare_ud_v3.py   # UD Hungarian v4 prompt-variáns (449 mondat)
 
 # 2. Benchmark futtatás (az első modell, smoke test)
 python scripts/run_hulu.py --model qwen3.5:4b --limit 50

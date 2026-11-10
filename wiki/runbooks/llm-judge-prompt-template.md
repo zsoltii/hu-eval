@@ -3,7 +3,7 @@
 *Típus:* runbook
 *Forrás(ok):* [Zheng et al. 2023 — Judging LLM-as-a-Judge](https://arxiv.org/abs/2306.05685), [MT-Bench paper](https://arxiv.org/abs/2306.05685), [DeepEval docs](https://docs.confident-ai.com/)
 *Létrehozva:* 2026-06-06
-*Frissítve:* 2026-06-06
+*Frissítve:* 2026-10-17 (bíró modell: deepseek-v4-pro:0813-cloud)
 
 ---
 
@@ -127,14 +127,14 @@ A judge **mindig** ezt a JSON-t adja vissza. Ha a modell más formátumban vála
 ```python
 #!/usr/bin/env python
 # judge_score.py — LLM-as-a-Judge hívás (1-10 skála, JSON output)
-# Használat: python judge_score.py --question "..." --response "..." --judge-model deepseek-v4-pro:cloud
+# Használat: python judge_score.py --question "..." --response "..." --judge-model deepseek-v4-pro:0813-cloud
 
 import argparse, json, re, time
 from pathlib import Path
 import requests
 
 OLLAMA_URL = "http://localhost:11434"
-JUDGE_DEFAULT = "deepseek-v4-pro:cloud"
+JUDGE_DEFAULT = "deepseek-v4-pro:0813-cloud"
 SYSTEM = ("Te egy tapasztalt magyar szövegértékelő bíró vagy. "
           "1-10 skálán pontozol, EGÉSZ számokkal, CSAK JSON-t adsz vissza.")
 
@@ -200,7 +200,7 @@ if __name__ == "__main__":
 python judge_score.py \
   --question "Magyarázd el a mohácsi csata jelentőségét 3 mondatban." \
   --response "A mohácsi csata 1526-ban zajlott, ahol II. Lajos királyunk vereséget szenvedett a török haderőtől. A vereség a középkori Magyar Királyság bukásának kezdetét jelentette." \
-  --judge-model deepseek-v4-pro:cloud
+  --judge-model deepseek-v4-pro:0813-cloud
 ```
 
 ### Két válasz A/B összehasonlítása
@@ -209,7 +209,7 @@ python judge_score.py \
 python judge_score.py --question "Mit jelent a 'kézbe ad' kifejezés?" \
   --response "Azt jelenti, hogy valamit odaad valakinek a kezébe." \
   --response-b "Idiomatikus kifejezés: valamit formálisan vagy jelképesen átadunk, gyakran felelősséggel együtt." \
-  --judge-model deepseek-v4-pro:cloud
+  --judge-model deepseek-v4-pro:0813-cloud
 ```
 
 ### Batch feldolgozás (részlet)
@@ -221,7 +221,7 @@ from pathlib import Path
 from judge_score import call_judge
 
 IN, OUT, JUDGE = Path("./results/qwen3.5-4b/hugme_results.jsonl"), \
-                  Path("./results/qwen3.5-4b/hugme_judged.jsonl"), "deepseek-v4-pro:cloud"
+                  Path("./results/qwen3.5-4b/hugme_judged.jsonl"), "deepseek-v4-pro:0813-cloud"
 with IN.open(encoding="utf-8") as fin, OUT.open("w", encoding="utf-8") as fout:
     for line in fin:
         item = json.loads(line)

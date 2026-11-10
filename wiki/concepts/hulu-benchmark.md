@@ -275,8 +275,10 @@ def extract_choice(text: str, num_choices: int) -> int:
 Az `extract_choice` először a regex-szel keres számjegyet (0-9), és ha talál, visszaadja. Ha nem talál, a magyar szavakat (nulla, egy, kettő, ...) próbálja. Ha egyik sem, -1 (üres válasz).
 
 A futtatás két módban történhet:
-- **`--mode nothink`** (alapértelmezett, num_predict=4096): a gondolkodás el van nyomva, a modell közvetlenül válaszol
-- **`--mode think`** (num_predict=16384): a modell gondolkodhat, a gondolkodás a `response` mezőben megjelenik
+- **`--mode nothink`**: a gondolkodás el van nyomva, a modell közvetlenül válaszol
+- **`--mode think`**: a modell gondolkodhat, a gondolkodás a `response` mezőben megjelenik
+
+> 2026-10-22 óta **nincs token-plafon**: a runner `num_predict=-1`-et ad, amit a `stop_on_error.resolve_num_predict` cloud modellnél a modell tényleges max output token korlátjára fordít (lokálisnál a -1 marad). A korábbi 4096/16384-es limitekkel készült eredmények emiatt nem teljesen összemérhetők az új futásokkal.
 
 A két mód eredményei külön mappákba kerülnek:
 - `state/{model_safe}-nothink/hulu.json` és `state/{model_safe}-think/hulu.json`
@@ -364,7 +366,7 @@ A composite score számítása a 6 NLU task átlagából történik (MCC 0-1-re 
 
 7. **HuWNLI nehézség** — a legnehezebb sub-task, a modellek 40-55% accuracy-t érnek el (közel a 50%-os véletlen baseline-hoz). A referenciafeloldás a világismeretre támaszkodik.
 
-8. **`num_predict` limit** — a `stop_on_error.py` `num_predict: 4096` (nothink) vagy `16384` (think) értéket küld. A thinking modellek (gpt-oss, minimax, qwen3.5) 2048+ tokent generálhatnak, és a limitnél megállnak (`done: length`), ami üres válaszhoz vezet. A 16384-es think limit a v1.2.5-ös javítás eredménye.
+8. **`num_predict` limit** — ~~a `stop_on_error.py` `num_predict: 4096` (nothink) vagy `16384` (think) értéket küld~~ **2026-10-22 óta nincs token-plafon**: `num_predict=-1` (cloud modellnél a `resolve_num_predict` a modell max output token korlátjára fordítja, pl. 262 144–1 048 576). A korábbi futásoknál a limit `done: length`-et és üres választ okozott — ezek történelmi összehasonlításra használhatók, de az új futásokkal nem teljesen összemérhetők.
 
 9. **Think/nothink eltérő eredmények** — ugyanaz a modell más eredményt adhat think vs nothink módban. A `glm-5.1:cloud` pl. nothink 71.6%, think 75.8% (+4.2%). A `kimi-k2.6:cloud` nothink 75.9%, think 75.2% (-0.7%). A gondolkodás segíthet vagy ronthat is, modelltől függően.
 

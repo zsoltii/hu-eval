@@ -3,7 +3,7 @@
 *Típus:* concept
 *Forrás(ok):* [OpenAI Chat Completions API](https://platform.openai.com/docs/api-reference/chat), [llama.cpp server](https://github.com/ggerganov/llama.cpp/blob/master/examples/server/README.md), belső projekt (2026-07-19)
 *Létrehozva:* 2026-07-19
-*Frissítve:* 2026-07-19
+*Frissítve:* 2026-10-24
 
 ---
 
@@ -73,7 +73,21 @@ A `think`/`nothink` flag hatása backend- és modellfüggő:
 | llama-server | A `chat_template` alapértelmezetten kezeli a gondolkodást; a request-body-ban nincs rá hatással. A `reasoning_format: none` + `reasoning_in_content: false` beállítással a modell **mindig gondolkodik**, és a gondolkodás a `reasoning_content` mezőbe kerül (a `content` tiszta marad). |
 | OpenAI API (nem-Ollama) | A think flag nincs hatással; a modell saját logikája szerint dönt |
 
-A **Thinking modell** (pl. `Qwen3-Next-80B-A3B-Thinking`) llama-server esetén mindkét módban gondolkodik. A `num_predict` értéke a `run_<bench>.py`-ban fix (nothink: 4096 / 2048 / 1024, think: 16384 / 2048); ezek a modellek néha túl kevésnek bizonyulhatnak — a `finish_reason: length` és üres `content` jellemző tünet. Ilyenkor a modell teljesítménye a riportban jelezendő limitáció.
+A **Thinking modell** (pl. `Qwen3-Next-80B-A3B-Thinking`) llama-server esetén mindkét módban gondolkodik. Korábban a `num_predict` értéke a `run_<bench>.py`-ban fix volt (nothink: 4096 / 2048 / 1024, think: 16384 / 2048), és a gondolkodás néha felemésztette — a `finish_reason: length` és az üres `content` jellemző tünet. **2026-10-22 óta nincs token-plafon** (`num_predict=-1`; OpenAI-kompatibilis backendnél a `max_tokens` mezőt elhagyjuk), így ez a hibalepfajta megszűnt. A korábbi, limitekkel készült eredmények limitációként jelölendők.
+
+## Sampling paraméterek és a 32k token-plafon (2026-10-24)
+
+**A kérések szándékosan nem tartalmaznak sampling paramétert** (`temperature`, `top_p`, `top_k`, `min_p`, `repeat_penalty`, `seed`) — minden backend (Ollama, llama-server, vLLM, TGI) a saját defaultját alkalmazza. Ez a `scripts/stop_on_error.py` és `scripts/openai_compat.py` közös kérésépítésében érvényesül, így **minden futás** (benchmark + bíró) ugyanazt a viselkedést kapja.
+
+**Miért nem küldjük:** a korábbi `temperature: 0.0` (greedy) dekódolás a lokális modelleknél **degenerált token-loopokat** generált: a `unsloth/Qwen3.5-9B-MTP-GGUF:UD-Q4_K_XL` UD Hungarian futásában **139/449 = 31%** az item így végződött (31 853–218 708 karakteres, ismétlődő szám- vagy szósorokkal). A hibás válaszok UPOS-átlaga 0.262 volt a tiszták 0.440-jéhez képest. A loopok 32k kontexten ~6 perc/item időt is elvitték.
+
+**Ellenőrzés (2026-10-24):** a loopot okozó 5 mondat (`— Hogyan tovább?`, `Már megérte Hannoverbe jönnie.`, `Ettől a győzelemtől magabiztos lettem.`, `Szerencsére megúsztuk kapott gól nélkül.`, `Az elemzés szerint korántsem.`) a javítás után **227–7007 karakteres tiszta CoNLL-U választ** ad — nincs loop. A llama-server a kérésben látott `temperature: 0.8` érték a saját defaultja.
+
+**A token-plafon:** a generálás felső korlátja mindenütt **32 768 token** (`MAX_OUTPUT_TOKENS` a `stop_on_error.py`-ban). A tényleges keretet a backend contextje adja: a prompt + a generált válasz **együtt belefér a contextbe**, vagyis a kérdés és a válasz is belefér a 32k-ba. A `-1` ("korlátlan", a `max_tokens`/`num_predict` mező kimarad) ma már egyetlen futás sem használja.
+
+**Bírók:** a 32k plafon a cloud bíróra (`deepseek-v4-pro:0813-cloud`) is érvényes, és a bírónak nem kell 32k-t generálnia — a pontszám 1–3 token. Mivel a bíróminta nem determinisztikus többé, a pontszám-kivonat lépcsőzetes (önálló szám egy sorban → első tizedes szám → első egész szám; a GSB-nél önálló `A`/`B`/`S` betű egy sorban → szövegen belüli önálló betű → első karakter).
+
+**Összehasonlíthatóság:** a 2026-10-24 előtti eredmények `temperature: 0.0` + korlátlan vagy 4096/8192/16384-es limitekkel készültek → a régi és az új eredmények **nem teljesen összemérhetők**. A lokális modell régi eredményei `*.temp0.*` fájlokban őrződnek (az aggregátor nem veszi őket figyelembe, mert a mintanév nem illeszkedik a `*_summary.json` / `*_judged.jsonl` globokra).
 
 ## JSONL kimenet (mindkét backend azonos)
 

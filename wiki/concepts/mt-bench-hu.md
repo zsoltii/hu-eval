@@ -7,7 +7,7 @@
 - Belső projekt: hu-eval overview — lásd [Overview](../overview.md)
 
 *Létrehozva:* 2026-06-06
-*Frissítve:* 2026-06-16 (v1.2.11 — runner + judge implementálva, 24 kérdés × 2 turn, GSB pairwise)
+*Frissítve:* 2026-10-17 (bíró modell: deepseek-v4-pro:0813-cloud, 2026-10-17 óta; korábban 2026-06-16: v1.2.11 — runner + judge implementálva, 24 kérdés × 2 turn, GSB pairwise)
 
 ---
 
@@ -190,7 +190,7 @@ def median(lista: List[Union[int, float]]) -> float:
 ## Limitációk
 
 - **Magyar specifikus kategóriák (Irony, Formal Letter, History)** nehezebben skálázódnak, mint az általános kategóriák — magas az emberi spot-check szükséglet.
-- **Bíró költség:** a 80 prompt × 2 forduló × bíró = 160 bíró hívás modellenként, ami `deepseek-v4-pro:cloud` (jelenlegi hivatalos bíró, 2026-07-19 óta) mellett is lassú (~30-45 perc). A `gemini-3-flash-preview:latest` megszűnt 2026-07-14.
+- **Bíró költség:** a 80 prompt × 2 forduló × bíró = 160 bíró hívás modellenként, ami `deepseek-v4-pro:0813-cloud` (jelenlegi hivatalos bíró, 2026-10-17 óta) mellett is lassú (~30-45 perc). A `gemini-3-flash-preview:latest` megszűnt 2026-07-14.
 - **Párosítás-kombinatorika:** 6 modell pairwise összehasonlítása = 15 pár, ami 1200 bíró hívás. Érdemes először abszolút pontozással szűrni, és csak a top 3-4 modellt pairwise futtatni.
 
 ## Összefüggés

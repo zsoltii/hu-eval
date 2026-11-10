@@ -11,8 +11,17 @@ LOG_DIR="./logs"
 PROJ="."
 
 cd "$PROJ"
-source "$HOME/anaconda3/etc/profile.d/conda.sh"
-conda activate eval-hu
+
+# Python környezet aktiválása: conda eval-hu (eredeti gépi konvenció) VAGY projekt .venv.
+if [ -f "$HOME/anaconda3/etc/profile.d/conda.sh" ]; then
+    source "$HOME/anaconda3/etc/profile.d/conda.sh"
+    conda activate eval-hu
+elif [ -f ".venv/bin/activate" ]; then
+    source .venv/bin/activate
+else
+    echo "❌ Nincs elérhető Python környezet (conda eval-hu vagy .venv)." >&2
+    exit 1
+fi
 
 echo "$(date): post_followup indítása"
 
@@ -71,9 +80,13 @@ python -u "$PROJ/scripts/rejudge_mt_bench.py" \
     --baselines deepseek-v4-flash:cloud deepseek-v4-pro:cloud kimi-k2.6:cloud \
     > "$LOG_DIR/rejudge_mt_bench_post.log" 2>&1
 
-# Státusz táblázat frissítése
+# Státusz táblázat frissítése (ha a helper elérhető — nem része a repónak)
 echo "Státusz táblázat frissítése"
-python3 /tmp/opencode/build_status_table.py
+if [ -f /tmp/opencode/build_status_table.py ]; then
+    python3 /tmp/opencode/build_status_table.py
+else
+    echo "⏭️  /tmp/opencode/build_status_table.py nem elérhető — státusz táblázat kihagyva"
+fi
 
 # Végső log
 echo "$(date): post_followup kész" >> "$LOG_DIR/post_followup.log"

@@ -1,146 +1,107 @@
 #!/usr/bin/env python
 """
-reparse_ud.py — Meglévő UD Hungarian JSONL-ek újrafeldolgozása a javított CoT-aware parser-rel.
+reparse_ud.py — a UD Hungarian eredmények újraparse-olása a jelenlegi
+parserrel, a tárolt nyers válaszokból.
 
-Nem futtatja újra a modelleket — csak a raw_response mezőkből parsolja ki a CoNLL-U-t az
-új, CoT-strip + szabad-formátum regex-eket is támogató parse_conllu_from_response függvénnyel.
+Miért kell: a parser több fejlesztésen ment át (a HEAD/DEPREL oszlopok
+robusztus keresése, majd a UPOS oszlopé is). A nyers válaszok (`raw_response`)
+teljes egészében megmaradnak, így a pontszámok **offline** újraszámolhatók
+a futások újrafuttatása nélkül.
+
+A script:
+  1. beolvassa a datasetet (gold tokenek),
+  2. újraparse-olja a `raw_response`-t a `run_ud_hungarian.parse_conllu_from_response`
+     függvénnyel,
+  3. frissíti a sorok `upos_accuracy` / `uas` / `las` / `parsed_tokens` mezőit,
+  4. újraírja a JSONL-t atomikusan (tmp + os.replace) és újraírja a summary-t.
 
 Használat:
-  python scripts/reparse_ud.py                    # minden modell × mód
-  python scripts/reparse_ud.py deepseek-v4-flash-cloud-nothink  # egy modell
-  python scripts/reparse_ud.py --only-parsable    # csak a nem-üres raw_response-ok
+    python scripts/reparse_ud.py results/*/ud_hungarian_results.jsonl
+    python scripts/reparse_ud.py --dry-run results/*/ud_hungarian_results.jsonl
 """
+import argparse
 import json
+import os
 import sys
+from datetime import datetime, timezone
 from pathlib import Path
 
-ROOT = Path(__file__).parent.parent
 sys.path.insert(0, str(Path(__file__).parent))
-from run_ud_hungarian import parse_conllu_from_response
+from run_ud_hungarian import parse_conllu_from_response  # noqa: E402
 
-DATASET_PATH = ROOT / "data" / "ud_hungarian" / "ud_hungarian_std.jsonl"
-RESULTS_DIR = ROOT / "results"
-
-
-def load_gold_tokens() -> dict[str, list[dict]]:
-    items = [json.loads(l) for l in DATASET_PATH.read_text(encoding="utf-8").splitlines()]
-    return {item["id"]: item["tokens"] for item in items}
-
-
-def reparse_model(model_safe: str, gold_map: dict, only_parsable: bool = False) -> dict:
-    res_path = RESULTS_DIR / model_safe / "ud_hungarian_results.jsonl"
-    if not res_path.exists():
-        return {"model": model_safe, "status": "NO_DATA"}
-
-    lines = res_path.read_text(encoding="utf-8").splitlines()
-    if not lines:
-        return {"model": model_safe, "status": "EMPTY"}
-
-    records = [json.loads(l) for l in lines]
-
-    n = 0
-    sum_upos = sum_uas = sum_las = 0.0
-    n_parsed = 0
-    n_skipped_empty = 0
-
-    new_records = []
-    for r in records:
-        rid = r["id"]
-        gold = gold_map.get(rid, [])
-        raw = r.get("raw_response", "")
-        if only_parsable and not raw.strip():
-            n_skipped_empty += 1
-            new_records.append(r)
-            continue
-        parsed = parse_conllu_from_response(raw, gold)
-        if parsed:
-            upos_acc = parsed["upos_correct"] / max(1, parsed["upos_total"])
-            head_acc = parsed["head_correct"] / max(1, parsed["head_total"])
-            deprel_acc = parsed["deprel_correct"] / max(1, parsed["deprel_total"])
-            r["upos_accuracy"] = round(upos_acc, 4)
-            r["uas"] = round(head_acc, 4)
-            r["las"] = round(deprel_acc, 4)
-            r["parsed_tokens"] = parsed
-            n_parsed += 1
-            sum_upos += upos_acc
-            sum_uas += head_acc
-            sum_las += deprel_acc
-        n += 1
-        new_records.append(r)
-
-    if n_parsed == 0:
-        return {
-            "model": model_safe,
-            "status": "NO_PARSED",
-            "n": n,
-            "n_empty": n_skipped_empty,
-        }
-
-    avg_upos = sum_upos / n_parsed
-    avg_uas = sum_uas / n_parsed
-    avg_las = sum_las / n_parsed
-    composite = (avg_upos + avg_uas + avg_las) / 3.0
-
-    res_path.write_text(
-        "\n".join(json.dumps(r, ensure_ascii=False) for r in new_records) + "\n",
-        encoding="utf-8",
-    )
-
-    summary = {
-        "model": new_records[0].get("model", model_safe) if new_records else model_safe,
-        "benchmark": "ud_hungarian",
-        "num_examples": n_parsed,
-        "accuracy": round(composite, 4),
-        "upos_accuracy": round(avg_upos, 4),
-        "uas": round(avg_uas, 4),
-        "las": round(avg_las, 4),
-        "results_file": str(res_path),
-    }
-    summary_path = RESULTS_DIR / model_safe / "ud_hungarian_summary.json"
-    summary_path.write_text(json.dumps(summary, indent=2, ensure_ascii=False), encoding="utf-8")
-
-    return {
-        "model": model_safe,
-        "status": "REWRITTEN",
-        "n_items": n,
-        "n_parsed": n_parsed,
-        "n_empty": n_skipped_empty,
-        "composite": round(composite, 4),
-        "upos": round(avg_upos, 4),
-        "uas": round(avg_uas, 4),
-        "las": round(avg_las, 4),
-    }
+DATASET_PATH = Path("./data/ud_hungarian/ud_hungarian_std.jsonl")
 
 
 def main() -> int:
-    args = sys.argv[1:]
-    only_parsable = "--only-parsable" in args
-    args = [a for a in args if a != "--only-parsable"]
+    ap = argparse.ArgumentParser()
+    ap.add_argument("files", nargs="+")
+    ap.add_argument("--dry-run", action="store_true", help="csak kiírja az új pontszámokat")
+    args = ap.parse_args()
 
     if not DATASET_PATH.exists():
-        print(f"❌ Dataset hiányzik: {DATASET_PATH}")
+        print(f"❌ Dataset nem található: {DATASET_PATH}")
         return 1
+    data = {json.loads(l)["id"]: json.loads(l) for l in
+            DATASET_PATH.read_text(encoding="utf-8").splitlines() if l.strip()}
 
-    print("📚 Gold tokenek betöltése...")
-    gold_map = load_gold_tokens()
-    print(f"   {len(gold_map)} mondat\n")
+    for f in args.files:
+        p = Path(f)
+        if not p.exists():
+            print(f"{f}: nem létezik")
+            continue
+        rows = [json.loads(l) for l in p.read_text(encoding="utf-8").splitlines() if l.strip()]
+        if not rows:
+            print(f"{f}: üres")
+            continue
+        old_u = sum(r.get("upos_accuracy") or 0 for r in rows) / len(rows)
+        old_h = sum(r.get("uas") or 0 for r in rows) / len(rows)
+        old_d = sum(r.get("las") or 0 for r in rows) / len(rows)
 
-    if args:
-        targets = args
-    else:
-        targets = sorted(p.name for p in RESULTS_DIR.iterdir() if p.is_dir())
+        for r in rows:
+            gold = data.get(r["id"], {}).get("tokens", [])
+            parsed = parse_conllu_from_response(r.get("raw_response") or "", gold)
+            if parsed:
+                r["upos_accuracy"] = round(parsed["upos_correct"] / max(1, parsed["upos_total"]), 4)
+                r["uas"] = round(parsed["head_correct"] / max(1, parsed["head_total"]), 4)
+                r["las"] = round(parsed["deprel_correct"] / max(1, parsed["deprel_total"]), 4)
+            else:
+                r["upos_accuracy"] = r["uas"] = r["las"] = 0.0
+            r["parsed_tokens"] = parsed
 
-    print(f"🔧 Reparse: {len(targets)} modell/mód (only_parsable={only_parsable})\n")
-    for model_safe in targets:
-        result = reparse_model(model_safe, gold_map, only_parsable)
-        if result["status"] == "REWRITTEN":
-            print(f"  ✅ {model_safe}: UPOS={result['upos']:.4f} UAS={result['uas']:.4f} "
-                  f"LAS={result['las']:.4f} | comp={result['composite']:.4f} "
-                  f"({result['n_parsed']}/{result['n_items']} parsed, {result['n_empty']} empty)")
-        else:
-            print(f"  ⚠️  {model_safe}: {result['status']}")
+        n = len(rows)
+        new_u = sum(r["upos_accuracy"] for r in rows) / n
+        new_h = sum(r["uas"] for r in rows) / n
+        new_d = sum(r["las"] for r in rows) / n
+        print(f"{f}")
+        print(f"   UPOS {old_u:.4f} → {new_u:.4f} | UAS {old_h:.4f} → {new_h:.4f} | "
+              f"LAS {old_d:.4f} → {new_d:.4f}")
+
+        if args.dry_run:
+            continue
+
+        # atomikus írás
+        tmp = p.with_suffix(p.suffix + ".tmp")
+        with tmp.open("w", encoding="utf-8") as fout:
+            for r in rows:
+                fout.write(json.dumps(r, ensure_ascii=False) + "\n")
+            fout.flush()
+            os.fsync(fout.fileno())
+        os.replace(tmp, p)
+
+        # summary frissítés
+        sp = p.parent / (p.name.replace("_results.jsonl", "_summary.json"))
+        if sp.exists():
+            s = json.loads(sp.read_text(encoding="utf-8"))
+            s["accuracy"] = round((new_u + new_h + new_d) / 3.0, 4)
+            s["upos_accuracy"] = round(new_u, 4)
+            s["uas"] = round(new_h, 4)
+            s["las"] = round(new_d, 4)
+            s["num_examples"] = n
+            s["reparsed_at"] = datetime.now(timezone.utc).isoformat()
+            sp.write_text(json.dumps(s, indent=2, ensure_ascii=False), encoding="utf-8")
+            print(f"   summary frissítve: {sp}")
     return 0
 
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    sys.exit(main())

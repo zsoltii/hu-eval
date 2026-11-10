@@ -3,13 +3,18 @@
 *Típus:* runbook
 *Forrás(ok):* belső projekt, [Anaconda docs](https://docs.conda.io/), [Ollama Python client](https://github.com/ollama/ollama-python), projekt `requirements.txt` (2026-07-19)
 *Létrehozva:* 2026-06-06
-*Frissítve:* 2026-07-19
+*Frissítve:* 2026-10-17
 
 ---
 
 ## Cél
 
-Létrehozni egy reprodukálható, izolált Python környezetet a magyar LLM értékelési projekthez (`eval-hu` conda env), amiben minden benchmark script, judge hívás és aggregáció fut. A futtatáshoz szükséges csomagok a projekt gyökerében lévő `requirements.txt`-ben vannak deklarálva (2026-07-19 óta).
+Létrehozni egy reprodukálható, izolált Python környezetet a magyar LLM értékelési projekthez (`eval-hu` conda env, illetve conda nélküli gépeken `uv` venv), amiben minden benchmark script, judge hívás és aggregáció fut. A futtatáshoz szükséges csomagok a projekt gyökerében lévő `requirements.txt`-ben vannak deklarálva (2026-07-19 óta).
+
+> **v1.7 (2026-10-17) változtatások:**
+> - Új "2b. Alternatíva: uv venv" szakasz — conda nélküli gépeken a projekt `.venv/` mappája (Python 3.11)
+> - A shell orchestratorok interpreter-feloldása: `PYTHON` env > conda `eval-hu` > projekt `.venv` (conda nélküli gépeken automatikusan a `.venv`-et használják)
+> - A `datasets/` mappa a repo része (verziókövetett) — a `data/` feltöltése `cp -r datasets/* data/`, majd `python scripts/prepare_ud_v3.py` (UD v4 prompt-variáns)
 
 > **v1.3.4 (2026-07-19) változtatások:**
 > - `requirements.txt` fájl a projekt gyökerében — `pip install -r requirements.txt` a kanonikus telepítési mód
@@ -64,6 +69,29 @@ which pip
 
 **FONTOS:** Ha a `which pip` a `/usr/bin/pip`-et mutatja, akkor a `conda activate` nem futott le rendesen. Ilyenkor a globális Pythonba telepítesz, ami **rossz** — töröld a telepítést és aktiválj újra.
 
+### 2b. Alternatíva: uv venv (conda nélküli gépek, 2026-10-17 óta)
+
+Ha a gépen nincs conda (pl. friss clone egy új gépen), a `uv` csomagkezelővel
+ugyanaz a Python 3.11-es környezet felépíthető a projekt `.venv/` mappájába.
+Ekkor az 1-2. lépés (conda létrehozás + aktiválás) kimarad, és a 3. lépés
+`uv pip`-pel fut.
+
+```bash
+# A projekt gyökeréből (ahol a requirements.txt van)
+uv venv --python 3.11 .venv          # legenerálja a .venv-et (a CPython 3.11.x-et letölti)
+uv pip install --python .venv/bin/python -r requirements.txt
+
+# Aktiválás (a további python hívásokhoz)
+source .venv/bin/activate
+which python   # <projekt>/.venv/bin/python kell legyen
+```
+
+A `.venv/` a `.gitignore`-ban van. A shell orchestratorok (`queue_runner.sh`,
+`queue_all_benchmarks.sh`, `phase2_runner.sh`, `post_followup.sh`, `priority_judge.sh`,
+`watchdog_priority.sh`) automatikusan felismerik a környezetet — a feloldási
+sorrend: `PYTHON` env változó > conda `eval-hu` > projekt `.venv` > hiba.
+Kézi felülíráshoz: `PYTHON=/útvonal/python bash scripts/queue_runner.sh`.
+
 ### 3. Csomagok telepítése
 
 #### A) `requirements.txt` használata (ajánlott, 2026-07-19 óta)
@@ -74,6 +102,14 @@ A projekt gyökerében lévő `requirements.txt` tartalmazza az összes szüksé
 # A projekt gyökeréből (ahol a requirements.txt van)
 cd <projekt-gyökere>
 pip install -r requirements.txt
+```
+
+uv venv esetén (2b. szakasz) ugyanez `uv pip`-pel:
+
+```bash
+# A projekt gyökeréből
+uv pip install --python .venv/bin/python -r requirements.txt
+# (ha a venv már aktiválva van: uv pip install -r requirements.txt)
 ```
 
 A `requirements.txt` jelenlegi tartalma (a kommenteket leszámítva):
@@ -215,13 +251,13 @@ curl -s https://api.openai.com/v1/models \
 
 A válasz `data[].id` (vagy `models[].name`) mezője a modell pontos neve, amit a `--model` kapcsolónak át kell adni.
 
-### 6. Datasetek előkészítése (offline másolás)
+### 6. Datasetek előkészítése
 
-A benchmark-futtatáshoz 5 dataset kell. Ezek a `datasets/` mappában vannak (git **nem** követi — a `.gitignore`-ban van, mérete ~6.5 MB). Két úton juthatunk hozzájuk:
+A benchmark-futtatáshoz 5 dataset kell. **2026-10-17 óta a `datasets/` mappa a git repo része** (verziókövetett, ~6.5 MB, 7 fájl — a korábbi, „git nem követi" leírás elavult), így friss clone után azonnal elérhető. A scriptek viszont a `./data/...` útvonalat várják, ezért a clone után másolni kell:
 
-**A) Offline másolás (ajánlott másik gépen):**
+**A) Másolás a `data/` mappába (ajánlott, új gépeken ez az egyetlen lépés):**
 
-A `datasets/` mappát át kell másolni az eredeti gépről (pl. `scp`, USB, `rsync`). A mappa szerkezete:
+A mappa szerkezete (a `data/` alatt ugyanez lesz):
 
 ```
 datasets/
@@ -232,11 +268,13 @@ datasets/
 └── ud_hungarian/   hu_szeged-ud-test.conllu, ud_hungarian_std.jsonl
 ```
 
-A scriptek a `./data/...` útvonalat használják. Tehát a dataseteket a `data/` mappába kell tenni (vagy symlinkelni). A legegyszerűbb:
-
 ```bash
 # A datasets/ tartalmát másoljuk a data/ alá (a scriptek által várt útvonal)
+mkdir -p data
 cp -r datasets/* data/
+
+# UD Hungarian v4 prompt-variáns generálása (a run_ud_v3.py ezt használja)
+python scripts/prepare_ud_v3.py
 ```
 
 Vagy symlinkkel (helytakarékos, ha a datasets/ és a data/ külön fájlrendszeren van):
@@ -247,19 +285,21 @@ ln -s ../datasets/mmlu_hu data/mmlu_hu
 ln -s ../datasets/hugme data/hugme
 ln -s ../datasets/mt_bench_hu data/mt_bench_hu
 ln -s ../datasets/ud_hungarian data/ud_hungarian
+# (a prepare_ud_v3.py symlink esetén a datasets/ud_hungarian/-ba ír)
 ```
 
-**B) Online letöltés (ha a `datasets/` nincs meg):**
+**B) Online letöltés (fallback, ha a `datasets/` hiányozna):**
 
 ```bash
-python scripts/download_hulu.py            # HuLU (NytK HF-ről, 2581 példa)
+python scripts/download_hulu.py            # HuLU (NYTK HF-ről, 2581 példa)
 python scripts/download_mmlu_hu.py         # MMLU-HU (NYTK/hu-mmlu, 38 tantárgy)
 python scripts/download_ud_hungarian.py    # UD Hungarian (CoNLL-U GitHub-ról)
 # HuGME (prompts.jsonl) és MT-Bench-HU (questions.jsonl) jelenleg nincs
 # download script — ezeket kézzel kell előállítani vagy a datasets/-ből másolni.
 ```
 
-Az így letöltött fájlok a `data/<benchmark>/` mappába kerülnek.
+Az így letöltött fájlok a `data/<benchmark>/` mappába kerülnek. Az UD v4 variánst
+online letöltés esetén is `python scripts/prepare_ud_v3.py`-vel kell generálni.
 
 ## Gyakori buktatók
 
@@ -352,12 +392,13 @@ sudo apt-get install -y libstdc++6
 
 ## Ellenőrző lista
 
-- [ ] `conda env list` mutatja az `eval-hu` env-et
-- [ ] `python --version` 3.11.x-et mutat
-- [ ] `which pip` az env-en belüli pip-et mutatja
+- [ ] `conda env list` mutatja az `eval-hu` env-et **vagy** létezik a projekt `.venv/` mappa (uv alternatíva)
+- [ ] `python --version` 3.11.x-et mutat (conda) / `.venv/bin/python --version` 3.11.x-et mutat (uv)
+- [ ] `which pip` az env-en belüli pip-et mutatja, vagy `uv pip list --python .venv/bin/python` működik
 - [ ] `python verify_env.py` minden csomagnál ✅-t ír
 - [ ] `curl http://localhost:11434/api/tags` válaszol (Ollama szerver fut)
 - [ ] Van legalább 1 modell letöltve (`ollama list`)
+- [ ] A `data/` mappa feltöltve (`cp -r datasets/* data/`), és létezik a `data/ud_hungarian/ud_hungarian_v4.jsonl`
 
 ## Kapcsolódó
 

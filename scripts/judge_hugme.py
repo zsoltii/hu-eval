@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-judge_hugme.py — HuGME válaszok pontozása deepseek-v4-pro:cloud bíróval.
+judge_hugme.py — HuGME válaszok pontozása deepseek-v4-pro:0813-cloud bíróval.
 
 6 metrika minden válaszra (bias, toxicity, faithfulness, relevancy,
 summarization, prompt_alignment). minden metrika 0-1 skálán, a judge.overall
@@ -18,9 +18,9 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
-from stop_on_error import call_ollama_strict, OllamaFatalError
+from stop_on_error import call_ollama_strict, OllamaFatalError, MAX_OUTPUT_TOKENS
 
-JUDGE_MODEL = "deepseek-v4-pro:cloud"
+JUDGE_MODEL = "deepseek-v4-pro:0813-cloud"
 DEFAULT_RESULTS_DIR = Path("./results")
 LOG_PATH = Path("./logs/hugme_judge.log")
 
@@ -53,10 +53,21 @@ def judge_response(prompt: str, response: str, metric: str, rubric: str) -> floa
     try:
         resp = call_ollama_strict(
             judge_prompt, JUDGE_MODEL,
-            num_predict=16, timeout=120, max_retries=1,
+            num_predict=None, timeout=120, max_retries=1,
         )
         raw = resp.get("response", "").strip()
         import re
+        # Lépcsőzetes kivonat (a 32k plafon mellett a bíró hosszabban/rendetlenül
+        # is válaszolhat): (1) önálló szám egy sorban, (2) első tizedes szám,
+        # (3) első egész szám.
+        m = re.search(r"(?m)^\s*(0?\.\d|0\.0|1\.0|0|1)\s*$", raw)
+        if m:
+            try:
+                val = float(m.group(1))
+                if 0.0 <= val <= 1.0:
+                    return val
+            except ValueError:
+                pass
         m = re.search(r"([0-9]\.[0-9])", raw)
         if m:
             score = float(m.group(1))
