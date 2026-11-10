@@ -3,7 +3,7 @@
 run_hugme.py — HuGME benchmark futtatása egy modellen, CHECKPOINT-AWARE.
 
 0-shot szabad generálás 300 prompton. A válaszokat a judge_hugme.py
-pontozza deepseek-v4-pro:0813-cloud bíróval (6 metrika).
+pontozza deepseek-v4.1-flash:cloud bíróval (6 metrika).
 
 Stop-on-error + resume.
 

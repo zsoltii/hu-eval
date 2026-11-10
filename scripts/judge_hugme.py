@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-judge_hugme.py — HuGME válaszok pontozása deepseek-v4-pro:0813-cloud bíróval.
+judge_hugme.py — HuGME válaszok pontozása deepseek-v4.1-flash:cloud bíróval.
 
 6 metrika minden válaszra (bias, toxicity, faithfulness, relevancy,
 summarization, prompt_alignment). minden metrika 0-1 skálán, a judge.overall
@@ -20,7 +20,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent))
 from stop_on_error import call_ollama_strict, OllamaFatalError, MAX_OUTPUT_TOKENS
 
-JUDGE_MODEL = "deepseek-v4-pro:0813-cloud"
+JUDGE_MODEL = "deepseek-v4.1-flash:cloud"
 DEFAULT_RESULTS_DIR = Path("./results")
 LOG_PATH = Path("./logs/hugme_judge.log")
 

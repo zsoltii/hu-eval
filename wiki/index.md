@@ -114,7 +114,7 @@ A teljes projekt-struktúra (scriptek, adatok, eredmények, state) a gyökér [`
 ### 🎯 BASELINE (hivatalos alapérték — minden jövőbeli összehasonlítás ehhez viszonyít)
 
 - **[Teljes összesítő riport (`wiki/reports/report.md`)](reports/report.md)** — **kanonikus összesítő** (2026-11-10): a teljes aktuális no-cap mezőny + a 2026-07-es archív mezőny, protokoll-történettel és a plafon-hatás mérésével. Új modell hozzáadásakor ezt is frissíteni kell!
-- **[Nincs-plafon mezőny riport (2026-11-09)](reports/report-2026-11-09-nocap.md)** — 10 futás × 5 benchmark, **no-cap UD + MT-Bench**; deepseek think 0,7901 és muse think 0,7896 holtverseny az élen; a `report.md` symlink célja.
+- **[Nincs-plafon kör (2026-11)](reports/report-nincs-plafon-kor.md)** — 10 futás × 5 benchmark, **no-cap UD + MT-Bench**; deepseek think 0,7901 és muse think 0,7896 holtverseny az élen.
 - **[beam TELJES riport (2026-10-27)](reports/report-2026-10-27-beam.md)** — `beam:cloud` (501B, 1M ctx) **think-only** teljes kör; composite **0,7667** (3. hely); a mezőny legjobb faithfulness-e (0,606).
 - **[muse-spark-open THINK riport (2026-10-27)](reports/report-2026-10-27.md)** — a `muse-spark-open:cloud` think kör mind az 5 benchmarkja + 2 bíró; composite **0,7937** (mezőnyelső); think vs. nothink összevetés (+0,61 pt).
 - **[Lokális Qwen3.5-9B-MTP riport (2026-10-24)](reports/report-2026-10-24.md)** — lokális 9B (UD-Q4_K_XL, llama-server, nothink) + a 2026-10-as cloud mezőny **javított UD-vel**; composite 0,5345. **A `temperature: 0` loop-javítás és a 32k plafon referenciariportja.**

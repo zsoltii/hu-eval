@@ -880,7 +880,7 @@ A 4 újraindítási kísérlet (17:37, 17:44, 17:51, 17:56) után sem sikerült 
 - **Romlás is van:** muse MT-Bench 0,5729 → 0,5521 (think), 0,5625 → 0,5000 (nothink) — a no-cap **nem univerzális javítás**.
 - **Végleges rangsor (40/40/20):** 1. deepseek-v4.1-flash think **0,7901** · 2. muse-spark-open think **0,7896** (Δ 0,0005 = holtverseny) · 3. muse nothink 0,7751 · 4. beam 0,7737 · 5. mistral think 0,7732 · 6. minimax think 0,7200 · 7. deepseek nothink 0,7123 · 8. mistral nothink 0,7000 · 9. minimax nothink 0,7391 (UD nélkül, súly-újraosztás) · 10. lokális 9B 0,5345.
 - **Dimenzió-győztesek:** STAT = muse think (0,852); GEN = deepseek think (0,729); LING = deepseek think (0,804).
-- **Wiki:** új [report-2026-11-09-nocap.md](reports/report-2026-11-09-nocap.md) (teljes, kötelező leírásokkal, HuLU sub-task táblával, kvantálással, UD három számmal), `report.md` symlink átállítva, `index.md` frissítve; a `reports/composite_scores.csv` naprakész.
+- **Wiki:** új [report-nincs-plafon-kor.md](reports/report-nincs-plafon-kor.md) (2026-11-10-én tematikusan átnevezve a 2026-11-09-nocap névről) (teljes, kötelező leírásokkal, HuLU sub-task táblával, kvantálással, UD három számmal), `report.md` symlink átállítva, `index.md` frissítve; a `reports/composite_scores.csv` naprakész.
 - **Nyitott:** minimax **nothink** UD sosem futott (érdemes no-cap-pel megpróbálni); lokális 9B think kör; harmadik MT-Bench baseline; HuLU/MMLU/HuGME no-cap újrafuttatás teljes egységességhez.
 
 ## 2026-11-09 (v2.5 — a tábla lezárva: minimax nothink UD is elkészült)
@@ -894,3 +894,18 @@ A 4 újraindítási kísérlet (17:37, 17:44, 17:51, 17:56) után sem sikerült 
 - **`wiki/reports/report.md` mostantól valódi, szerkesztett összesítő fájl** (nem symlink). Tartalma: a teljes **2026-11-es no-cap mezőny** (10 futás × 5 benchmark, minden cella kitöltve) + a **2026-07-es archív mezőny** (18 sor) külön, „nem összemérhető" figyelmeztetéssel, + **protokoll-történet** (greedy → nincs sampling → 32k → nincs plafon) a mért hatásokkal.
 - A riport tartalmazza a kötelező elemeket: benchmark-leírások minden szekcióban, HuLU per-sub-task tábla (mind a 10 futásra), kvantálás, backend, UD három szám, composite A + B, dimenzió-győztesek.
 - **Fő üzenet:** deepseek-v4.1-flash think (0,7901) és muse-spark-open think (0,7896) holtverseny; deepseek nyeri a GEN + LING dimenziót, muse a STAT-ot; a plafon elhagyása modellfüggően ±(2–18) pt-otmozgat.
+
+## 2026-11-10 (v2.7 — a report.md futtatás-szintű összesítővé bővítve)
+
+- **`wiki/reports/report.md` 0. szekciója most futtatás-szintű:** 40 értékelt futtatás (2026-07: 21, 2026-10: 10, 2026-11: 9) + 2 RETIRED sor, composite szerint rendezve, `Kör` oszloppal (melyik protokollal készült).
+- **Minden modell szerepel:** qwen3.5, qwen3-next-80b (RETIRED), gpt-oss-120b, gpt-oss-20b, kimi-k2.6, glm-5.1, glm-5.2, nemotron-3-ultra, deepseek-v4-flash, deepseek-v4-pro, minimax-m3, deepseek-v4.1-flash, minimax-m3.1-flash, mistral-large-4, muse-spark-open, beam, unsloth Qwen3.5-9B (lok.), Qwen3-Next-80B IQ3_XXS (lok.).
+- **A 2026-07-es archív kör per-benchmark bontással** is bekerült (7.1 HuLU, 7.2 MMLU, 7.3 HuGME 0–10 skálán, 7.4 MT-Bench, 7.5 UD) + figyelmeztetés, hogy nem összemérhető.
+- **Tematikus átnevezés:** `report-2026-11-09-nocap.md` → [report-nincs-plafon-kor.md](reports/report-nincs-plafon-kor.md).
+- **glm-5.3** nem szerepel: ilyen modell nem volt mérve (glm-5.1 és glm-5.2 van).
+
+## 2026-11-10 (v2.8 — kompromittált futtatások jelölése + bíróváltás)
+
+- **`report.md` 0. táblázata új `Limit / context` oszloppal:** ✅ = nincs plafon (2026-11, 9 futtatás), ⚠️ = 32k kimeneti plafon (2026-10, 10 futtatás), ⚠️⚠️ = 4–16k kimenet / 16K context (2026-07, 21 futtatás). Új **0.1 szekció**: „Kompromittált futtatások" — körönként a limit és a mért hatás (deepseek think UD 20,3% üres; lokális 9B parse 83,1%; 2026-07 think UD 0–7,5% érvénytelen).
+- **Bíróváltás:** a `JUDGE_MODEL` mostantól `deepseek-v4.1-flash:cloud` (judge_hugme.py, judge_mt_bench.py, rejudge_*.py). A kért `deepseek-v4.1-flash:1017` tag **nem érhető el** a lokális Ollama API-n (`pull` → "file does not exist"); csak az OpenCode `ollama-cloud` providere kínálja.
+- **Self-bias figyelmeztetés:** a deepseek-v4.1-flash maga a mezőny 1. helyezettje, ezért a saját sorai (think/nothink) **kimaradnak** az újrapontozásból (run18) — külön döntés szükséges rájuk.
+- **run18 (fut):** a 8 nem-deepseek futás újrapontozása az új bíróval; a régi bíró eredményei `*.judge-v4pro.*` néven archiválva.

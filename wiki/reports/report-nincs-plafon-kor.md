@@ -1,9 +1,9 @@
-# Riport — 2026-11-09. (nincs-plafon mezőny: 5 benchmark × 10 futás)
+# Nincs-plafon kör — 2026-11. (5 benchmark × 10 futás)
 
 *Típus:* report
 *Forrás(ok):* belső projekt futtatás; `logs/run14/driver.log`, `logs/run15/driver.log`, `logs/run16/driver.log`, `results/*/*_summary.json`, `reports/composite_scores.csv`, `reports/hulu_breakdown.md`, `reports/mmlu_hu_breakdown.md`, `reports/ud_hungarian_breakdown.md`
 *Létrehozva:* 2026-11-09
-*Frissítve:* 2026-11-09
+*Frissítve:* 2026-11-10 (tematikus átnevezés: `report-nincs-plafon-kor.md`)
 
 ---
 

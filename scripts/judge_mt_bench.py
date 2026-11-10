@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-judge_mt_bench.py — MT-Bench-HU válaszok pontozása deepseek-v4-pro:0813-cloud bíróval.
+judge_mt_bench.py — MT-Bench-HU válaszok pontozása deepseek-v4.1-flash:cloud bíróval.
 
 GSB (Good/Same/Bad) pairwise összehasonlítás egy baseline modellhez képest.
 A judge.overall = win rate (0-1).
@@ -21,7 +21,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent))
 from stop_on_error import call_ollama_strict, OllamaFatalError, MAX_OUTPUT_TOKENS
 
-JUDGE_MODEL = "deepseek-v4-pro:0813-cloud"
+JUDGE_MODEL = "deepseek-v4.1-flash:cloud"
 BASELINE_MODEL = "deepseek-v4-flash:cloud"  # default baseline
 DEFAULT_RESULTS_DIR = Path("./results")
 LOG_PATH = Path("./logs/mt_bench_judge.log")
